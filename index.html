@@ -1,0 +1,2517 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>사도 핑퐁 - Apostle Pong</title>
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <style>
+    @font-face {
+      font-family: 'ONEMobilePOP';
+      src: url('ONE Mobile POP.ttf') format('truetype'),
+           url('ONE Mobile POP OTF.otf') format('opentype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'MochiyPopOne';
+      src: url('MochiyPopOne-Regular.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    :root {
+      --theme-main: #68b833;
+      --theme-dark: #43801d;
+      --theme-light: #f4fbf0;
+      --theme-border: rgba(104, 184, 51, 0.35);
+      --bg-page: #f0f7ec;
+      --app-font: 'ONEMobilePOP', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 16px 10px;
+      background-color: var(--bg-page);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: var(--app-font);
+      font-weight: normal;
+      user-select: none;
+      color: #2d3748;
+      transition: background-color 0.25s ease;
+      overflow: hidden;
+    }
+
+    .game-frame {
+      width: 480px;
+      background: #ffffff;
+      border: 5px solid var(--theme-main);
+      border-radius: 40px;
+      padding: 20px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.08);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 0 4px;
+      gap: 8px;
+    }
+
+    .top-bar h1 {
+      margin: 0;
+      font-size: 19px;
+      font-weight: normal;
+      color: var(--theme-dark);
+      white-space: nowrap;
+      flex-shrink: 0;
+      letter-spacing: -0.5px;
+    }
+
+    .top-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .score-board {
+      font-size: 14px;
+      color: var(--theme-dark);
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      background: var(--theme-light);
+      border: 1.5px solid var(--theme-border);
+      padding: 4px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .score-board b {
+      font-size: 16px;
+      color: #0f172a;
+    }
+
+    .gear-btn, .net-btn {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px;
+      transition: transform 0.15s;
+    }
+    .gear-btn:hover, .net-btn:hover { transform: scale(1.15); }
+
+    #pongCanvas {
+      width: 430px;
+      height: 540px;
+      background-color: var(--theme-light);
+      border: 3px solid var(--theme-main);
+      border-radius: 24px;
+      cursor: none;
+    }
+
+    .item-guide-box {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 12px;
+      width: 100%;
+      background: #ffffff;
+      border: 1.5px solid var(--theme-border);
+      border-radius: 14px;
+      padding: 7px 12px;
+      font-size: 11.5px;
+      color: #475569;
+    }
+
+    .item-guide-box span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .item-guide-icon {
+      width: 17px;
+      height: 17px;
+      object-fit: contain;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      flex-shrink: 0;
+    }
+
+    .char-select-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      background: var(--theme-light);
+      border: 2px solid var(--theme-border);
+      border-radius: 16px;
+      padding: 6px 12px;
+      font-size: 13px;
+      transition: opacity 0.2s, background-color 0.2s;
+    }
+
+    .char-select-row.locked {
+      opacity: 0.65;
+      background: #f1f5f9;
+      cursor: not-allowed;
+    }
+
+    .select-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .char-avatar-mini {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--theme-border);
+      background: #ffffff;
+      object-fit: cover;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      flex-shrink: 0;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .char-avatar-mini.pop {
+      transform: scale(1.22);
+    }
+
+    select {
+      font-family: inherit;
+      padding: 4px 8px;
+      border-radius: 8px;
+      border: 1.5px solid var(--theme-border);
+      background: #ffffff;
+      color: var(--theme-dark);
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    select:disabled {
+      cursor: not-allowed;
+      color: #64748b;
+      border-color: #cbd5e1;
+    }
+
+    .bottom-guide {
+      font-size: 11.5px;
+      color: #64748b;
+      text-align: center;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .modal-box {
+      width: 380px;
+      background: #ffffff;
+      border: 4px solid var(--theme-main);
+      border-radius: 28px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      font-family: var(--app-font);
+      font-weight: normal;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: normal;
+      color: var(--theme-dark);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-group { display: flex; flex-direction: column; gap: 8px; }
+    .modal-label { font-size: 13px; color: #64748b; display: flex; justify-content: space-between; }
+    .modal-row { display: flex; gap: 8px; }
+
+    .modal-btn {
+      flex: 1;
+      padding: 10px 0;
+      border-radius: 14px;
+      border: 2px solid #cbd5e1;
+      background: #ffffff;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: normal;
+      cursor: pointer;
+      color: #334155;
+      transition: transform 0.1s, background-color 0.15s;
+    }
+    .modal-btn:hover { transform: scale(1.02); }
+
+    .modal-btn.active {
+      background: var(--theme-main);
+      color: #ffffff;
+      border-color: var(--theme-dark);
+    }
+
+    .btn-revenge {
+      background: #e11d48 !important;
+      color: #ffffff !important;
+      border-color: #9f1239 !important;
+      font-size: 15px !important;
+    }
+
+    .btn-cancel {
+      background: #f1f5f9 !important;
+      color: #475569 !important;
+      border-color: #cbd5e1 !important;
+    }
+
+    .char-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .char-pick-card {
+      border: 2px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 6px 2px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      background: #f8fafc;
+      transition: all 0.15s ease;
+    }
+
+    .char-pick-card.active {
+      border-color: var(--theme-main);
+      background: var(--theme-light);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(104, 184, 51, 0.25);
+    }
+
+    .char-pick-card img {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      object-fit: cover;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    .char-pick-card span {
+      font-size: 11px;
+      color: #334155;
+    }
+
+    .volume-slider {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #e2e8f0;
+      outline: none;
+      -webkit-appearance: none;
+      accent-color: var(--theme-main);
+      cursor: pointer;
+    }
+
+    .net-input {
+      padding: 8px 12px;
+      border: 2px solid var(--theme-border);
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 14px;
+      text-align: center;
+      outline: none;
+      color: var(--theme-dark);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-frame" id="gameFrame">
+    <div class="top-bar">
+      <h1 id="titleTxt">사도 핑퐁 (10세트)</h1>
+      <div class="top-right">
+        <div class="score-board">
+          <span><span id="lblOpponent">AI</span> <b id="aiScoreTxt" style="font-weight:normal;">0</b></span>
+          <span style="opacity:0.4;">:</span>
+          <span><b id="pScoreTxt" style="font-weight:normal;">0</b> <span id="lblScorePlayer">교주</span></span>
+        </div>
+        <button class="net-btn" onclick="openMultiModal()" title="Multiplayer">🌐</button>
+        <button class="gear-btn" onclick="openSettings()" title="Settings">⚙️️</button>
+      </div>
+    </div>
+
+    <canvas id="pongCanvas"></canvas>
+
+    <div class="item-guide-box">
+      <span><img src="item_yellow.png" class="item-guide-icon" alt="pink"><span id="guideYellow">분홍캔: 가드 확대</span></span>
+      <span><img src="item_green.png" class="item-guide-icon" alt="blue"><span id="guideGreen">하늘캔: 가드 축소</span></span>
+      <span><img src="item_purple.png" class="item-guide-icon" alt="star"><span id="guidePurple">별사탕: 공 복제</span></span>
+      <span><img src="item_macaron.png" class="item-guide-icon" alt="macaron"><span id="guideMacaron">모카롱: 슬라임 범퍼</span></span>
+    </div>
+
+    <div class="char-select-row" id="charSelectRow">
+      <div class="select-group">
+        <span id="lblPlayer">MY:</span>
+        <img id="myAvatarMini" class="char-avatar-mini" src="butter.png" alt="My">
+        <select id="playerCharSelect" onchange="changePlayerChar(this.value)">
+          <option value="butter">버터</option>
+          <option value="rim">림</option>
+          <option value="ner">네르</option>
+          <option value="aya">아야</option>
+          <option value="daya">다야</option>
+        </select>
+      </div>
+
+      <div class="select-group">
+        <span id="lblAi">OPPONENT:</span>
+        <img id="aiAvatarMini" class="char-avatar-mini" src="dwqdqdsswdasdas.png" alt="Ai">
+        <select id="aiCharSelect" onchange="changeAiChar(this.value)">
+          <option value="rim">림</option>
+          <option value="butter">버터</option>
+          <option value="ner">네르</option>
+          <option value="aya">아야</option>
+          <option value="daya">다야</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="bottom-guide" id="bottomControlGuide">
+      게임 시작 전 사도를 선택하세요! 경기 중에는 변경할 수 없습니다 (10세트 선취전).
+    </div>
+  </div>
+
+  <!-- [초기 진입 모달] 최초 실행 시 언어 및 사도 선택 -->
+  <div class="modal-overlay" id="initModal">
+    <div class="modal-box">
+      <div class="modal-title">
+        <span id="initModalTitle">✨ 시작 설정</span>
+      </div>
+
+      <div class="modal-group">
+        <div class="modal-label" id="lblInitLang">언어 선택 (Language)</div>
+        <div class="modal-row">
+          <button class="modal-btn active" id="btnInitKo" onclick="setLanguage('ko')">한국어</button>
+          <button class="modal-btn" id="btnInitJa" onclick="setLanguage('ja')">日本語</button>
+          <button class="modal-btn" id="btnInitEn" onclick="setLanguage('en')">English</button>
+        </div>
+      </div>
+
+      <div class="modal-group">
+        <div class="modal-label" id="lblInitChar">플레이할 사도를 선택하세요!</div>
+        <div class="char-picker-grid">
+          <div class="char-pick-card active" id="pick_butter" onclick="selectInitialChar('butter')">
+            <img id="modalPickImg_butter" src="butter.png" alt="버터">
+            <span id="txtPick_butter">버터</span>
+          </div>
+          <div class="char-pick-card" id="pick_rim" onclick="selectInitialChar('rim')">
+            <img id="modalPickImg_rim" src="dwqdqdsswdasdas.png" alt="림">
+            <span id="txtPick_rim">림</span>
+          </div>
+          <div class="char-pick-card" id="pick_ner" onclick="selectInitialChar('ner')">
+            <img id="modalPickImg_ner" src="NERU.png" alt="네르">
+            <span id="txtPick_ner">네르</span>
+          </div>
+          <div class="char-pick-card" id="pick_aya" onclick="selectInitialChar('aya')">
+            <img id="modalPickImg_aya" src="aya.png" alt="아야">
+            <span id="txtPick_aya">아야</span>
+          </div>
+          <div class="char-pick-card" id="pick_daya" onclick="selectInitialChar('daya')">
+            <img id="modalPickImg_daya" src="DAYAYA.png" alt="다야">
+            <span id="txtPick_daya">다야</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="modal-btn active" id="btnConfirmStart" onclick="confirmInitialSetup()" style="margin-top: 6px; padding: 12px 0; font-size: 15px;">
+        게임 시작하기 🚀
+      </button>
+    </div>
+  </div>
+
+  <!-- 환경 설정 모달 -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal-box">
+      <div class="modal-title">
+        <span id="modalHeader">환경 설정</span>
+        <button style="border:none;background:none;font-size:22px;cursor:pointer;" onclick="closeSettings()">✕</button>
+      </div>
+
+      <div class="modal-group">
+        <div class="modal-label">
+          <span id="lblNicknameTitle">플레이어 닉네임</span>
+        </div>
+        <div class="modal-row">
+          <input type="text" id="nicknameInput" class="net-input" maxlength="8" placeholder="닉네임 입력 (최대 8자)" style="flex: 2;">
+          <button class="modal-btn active" id="btnSaveNickname" onclick="saveNickname()" style="flex: 1;">저장</button>
+        </div>
+      </div>
+
+      <div class="modal-group">
+        <div class="modal-label">
+          <span id="lblBgm">배경음 볼륨 (BGM)</span>
+          <span id="valBgm">50%</span>
+        </div>
+        <input type="range" class="volume-slider" id="sliderBgm" min="0" max="1" step="0.05" value="0.5" oninput="setBgmVolume(this.value)">
+      </div>
+
+      <div class="modal-group">
+        <div class="modal-label">
+          <span id="lblBgmLoop">BGM 재생 모드</span>
+        </div>
+        <div class="modal-row">
+          <button class="modal-btn active" id="btnBgmOnce" onclick="setBgmLoopMode(false)">1회 완주 후 정지</button>
+          <button class="modal-btn" id="btnBgmLoop" onclick="setBgmLoopMode(true)">무한 반복</button>
+        </div>
+      </div>
+
+      <div class="modal-group">
+        <div class="modal-label">
+          <span id="lblSfx">효과음 볼륨 (SFX)</span>
+          <span id="valSfx">70%</span>
+        </div>
+        <input type="range" class="volume-slider" id="sliderSfx" min="0" max="1" step="0.05" value="0.7" oninput="setSfxVolume(this.value)">
+      </div>
+
+      <div class="modal-group">
+        <div class="modal-label" id="lblDifficulty">난이도 (AI 대전 전용)</div>
+        <div class="modal-row">
+          <button class="modal-btn" id="btnDiffEasy" onclick="setDifficulty('easy')">쉬움</button>
+          <button class="modal-btn active" id="btnDiffNormal" onclick="setDifficulty('normal')">보통</button>
+          <button class="modal-btn" id="btnDiffHard" onclick="setDifficulty('hard')">어려움</button>
+        </div>
+      </div>
+
+      <div class="modal-group">
+        <div class="modal-label" id="lblLang">언어 (Language)</div>
+        <div class="modal-row">
+          <button class="modal-btn active" id="btnLangKo" onclick="setLanguage('ko')">한국어</button>
+          <button class="modal-btn" id="btnLangJa" onclick="setLanguage('ja')">日本語</button>
+          <button class="modal-btn" id="btnLangEn" onclick="setLanguage('en')">English</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 멀티플레이 모달 -->
+  <div class="modal-overlay" id="multiModal">
+    <div class="modal-box">
+      <div class="modal-title">
+        <span id="multiModalTitle">🌐 1:1 P2P 멀티플레이</span>
+        <button style="border:none;background:none;font-size:22px;cursor:pointer;" onclick="closeMultiModal()">✕</button>
+      </div>
+
+      <div class="modal-group">
+        <div id="multiDescTxt" style="font-size: 13px; color: #4b5563; line-height: 1.5;">
+          별도 서버 설치 없이 브라우저 간 직접 연결(P2P)됩니다.
+        </div>
+      </div>
+
+      <div class="modal-group" style="background: var(--theme-light); padding: 12px; border-radius: 14px; border: 1.5px solid var(--theme-border);">
+        <div id="multiHostTitle" style="font-size: 13px; font-weight: bold; color: var(--theme-dark);">1. 방 만들기 (호스트)</div>
+        <button class="modal-btn active" onclick="createRoom()" id="btnCreateRoom" style="margin-top: 6px;">방 생성하기</button>
+        <div id="roomCodeDisplay" style="display:none; margin-top: 8px; font-size: 13px; color: #1e293b; text-align: center;">
+          <span id="lblMyRoomCode">내 방 코드:</span> <b id="myRoomId" style="color:var(--theme-dark); font-size: 16px; user-select: all;"></b>
+          <div id="lblTellFriend" style="font-size:11px; color:#64748b; margin-top:2px;">상대방에게 이 코드를 알려주세요!</div>
+        </div>
+      </div>
+
+      <div class="modal-group" style="background: #f8fafc; padding: 12px; border-radius: 14px; border: 1.5px solid #cbd5e1;">
+        <div id="multiGuestTitle" style="font-size: 13px; font-weight: bold; color: #334155;">2. 방 참가하기 (게스트)</div>
+        <div class="modal-row" style="margin-top: 6px;">
+          <input type="text" id="joinRoomInput" class="net-input" placeholder="방 코드 입력" style="flex: 2; text-transform: uppercase;">
+          <button class="modal-btn" id="btnJoinRoom" onclick="joinRoom()" style="flex: 1; background: #3b82f6; color: #ffffff; border-color: #2563eb;">참가</button>
+        </div>
+      </div>
+
+      <button class="modal-btn" id="btnBackToAi" onclick="disconnectMulti(true)" style="color: #64748b; margin-top: 4px;">
+        🤖 1인용 AI 모드로 돌아가기
+      </button>
+      <div id="multiStatusTxt" style="font-size: 12px; text-align: center; color: #0284c7; min-height: 16px;"></div>
+    </div>
+  </div>
+
+  <!-- 리벤지 / 취소 게임오버 모달 -->
+  <div class="modal-overlay" id="revengeModal">
+    <div class="modal-box" style="text-align: center; gap: 18px;">
+      <div id="matchResultTitle" style="font-size: 24px; font-weight: bold; margin-top: 6px;">GAME OVER</div>
+      <div id="matchResultSub" style="font-size: 14px; color: #64748b;">다시 한 판 승부를 겨루시겠습니까?</div>
+      
+      <div class="modal-row">
+        <button class="modal-btn btn-revenge" id="btnRevengeAction" onclick="onRevengeClicked()">⚔️ 리벤지 (다시 하기)</button>
+        <button class="modal-btn btn-cancel" id="btnCancelAction" onclick="onCancelMatchClicked()">🚪 나가기 (취소)</button>
+      </div>
+      <div id="revengeStatusTxt" style="font-size: 12px; color: #e11d48; min-height: 16px;"></div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('pongCanvas');
+    const ctx = canvas.getContext('2d');
+    const gameFrame = document.getElementById('gameFrame');
+
+    const viewW = 430;
+    const viewH = 540;
+
+    let dpr = Math.max(Math.ceil(window.devicePixelRatio || 1), 2);
+    function setupCanvasDPI() {
+      dpr = Math.max(Math.ceil(window.devicePixelRatio || 1), 2);
+      canvas.width = viewW * dpr;
+      canvas.height = viewH * dpr;
+      canvas.style.width = viewW + 'px';
+      canvas.style.height = viewH + 'px';
+    }
+    setupCanvasDPI();
+    window.addEventListener('resize', setupCanvasDPI);
+
+    let myNickname = localStorage.getItem('pong_nickname') || '교주';
+    let opponentNickname = 'AI';
+
+    function initNicknameUI() {
+      document.getElementById('nicknameInput').value = myNickname;
+      document.getElementById('lblScorePlayer').innerText = myNickname;
+    }
+
+    function saveNickname() {
+      const val = document.getElementById('nicknameInput').value.trim();
+      if (!val) return;
+      myNickname = val;
+      localStorage.setItem('pong_nickname', myNickname);
+      document.getElementById('lblScorePlayer').innerText = myNickname;
+
+      if (conn && conn.open) {
+        conn.send({ type: 'NICKNAME', name: myNickname });
+      }
+
+      popups.push(new PopupText(viewW / 2, viewH / 2 - 20, `${I18N[curLang].nickSavedPrefix}: ${myNickname}`, THEMES[curPlayerChar].dark));
+    }
+
+    const I18N = {
+      ko: {
+        fontFamily: "'ONEMobilePOP', sans-serif",
+        title: "사도 핑퐁 (10세트)",
+        settings: "환경 설정",
+        initTitle: "✨ 사도 핑퐁 시작 설정",
+        initLang: "언어 선택 (Language)",
+        initChar: "플레이할 사도를 선택하세요!",
+        initStartBtn: "게임 시작하기 🚀",
+        nicknameTitle: "플레이어 닉네임",
+        saveNickBtn: "저장",
+        nickSavedPrefix: "닉네임 저장",
+        bgm: "배경음 볼륨 (BGM)",
+        bgmLoopLabel: "BGM 재생 모드",
+        bgmOnce: "1회 완주 후 정지",
+        bgmRepeat: "무한 반복",
+        sfx: "효과음 볼륨 (SFX)",
+        difficulty: "난이도 (AI 대전)",
+        language: "언어 (Language)",
+        diffNames: { easy: "쉬움", normal: "보통", hard: "어려움" },
+        diffSetPrefix: "난이도: ",
+        guideYellow: "분홍캔: 가드 확대",
+        guideGreen: "하늘캔: 가드 축소",
+        guidePurple: "별사탕: 공 복제",
+        guideMacaron: "모카롱: 슬라임 범퍼",
+        controlGuide: "게임 시작 전 사도를 선택하세요! 경기 중에는 변경할 수 없습니다 (10세트 선취전).",
+        lblPlayerSelect: "MY:",
+        lblAiSelect: "OPPONENT:",
+        targetAi: "AI",
+        lblAiName: "AI",
+        paddleUpTxt: "확대!",
+        paddleDownTxt: "축소!",
+        multiBall: "⭐ MULTI BALL!!",
+        slimeSpawn: "🍮 슬라임 미믹 소환!",
+        droneWarning: "⚠ DRONE PASSING!!",
+        hitPlayer: "나이스 리턴!",
+        blockAi: "AI 가드!",
+        blockOpponent: "상대 가드!",
+        serveAuto: "서브까지 {sec}초...",
+        startPlayerBadge: "시작 플레이어",
+        introCountdown: "게임 시작까지 {sec}초...",
+        winFinal: "승리했습니다! 🎉",
+        loseFinal: "패배했습니다... 💧",
+        revengeBtn: "⚔️ 리벤지 (다시 하기)",
+        cancelBtn: "🚪 나가기 (취소)",
+        revengeAsk: "다시 한 판 승부를 겨루시겠습니까?",
+        revengeWaiting: "상대방의 리벤지 수락을 기다리는 중...",
+        nextRound: "다음 세트 준비 중... ({sec}초)",
+        point: "POINT!! 🎉",
+        miss: "MISS... 💧",
+        chars: { butter: "버터", rim: "림", ner: "네르", aya: "아야", daya: "다야" },
+        multiTitle: "🌐 1:1 P2P 멀티플레이",
+        multiDesc: "별도 서버 설치 없이 브라우저 간 직접 연결(P2P)됩니다.",
+        multiHost: "1. 방 만들기 (호스트)",
+        multiCreateBtn: "방 생성하기",
+        multiMyCode: "내 방 코드:",
+        multiTellFriend: "상대방에게 이 코드를 알려주세요!",
+        multiGuest: "2. 방 참가하기 (게스트)",
+        multiInputPlaceholder: "방 코드 입력",
+        multiJoinBtn: "참가",
+        multiBackAi: "🤖 1인용 AI 모드로 돌아가기",
+        multiConnecting: "시그널링 서버 연결 중...",
+        multiWaiting: "게스트 접속 대기 중...",
+        multiGuestConnected: "게스트 접속 완료! 매칭 화면으로 이동합니다.",
+        multiConnectingHost: "호스트에 연결 중...",
+        multiConnected: "연결 성공! 매칭 화면으로 이동합니다.",
+        multiClosed: "상대방과의 연결이 끊어졌습니다. 메인 화면으로 돌아갑니다."
+      },
+      ja: {
+        fontFamily: "'MochiyPopOne', sans-serif",
+        title: "使徒ピンポン (10セット)",
+        settings: "環境設定",
+        initTitle: "✨ 使徒ピンポン 開始設定",
+        initLang: "言語選択 (Language)",
+        initChar: "プレイする使徒を選択してください！",
+        initStartBtn: "ゲームスタート 🚀",
+        nicknameTitle: "プレイヤー名",
+        saveNickBtn: "保存",
+        nickSavedPrefix: "プレイヤー名を保存",
+        bgm: "BGM音量",
+        bgmLoopLabel: "BGM再生モード",
+        bgmOnce: "1回再生で停止",
+        bgmRepeat: "リピート再生",
+        sfx: "効果音音量 (SFX)",
+        difficulty: "難易度 (AI対戦)",
+        language: "言語 (Language)",
+        diffNames: { easy: "かんたん", normal: "ふつう", hard: "むずかしい" },
+        diffSetPrefix: "難易度: ",
+        guideYellow: "ピンク缶: ガード拡大",
+        guideGreen: "ブルー缶: ガード縮小",
+        guidePurple: "スターキャンディ: ボール分裂",
+        guideMacaron: "モカロン: スライムバンパー",
+        controlGuide: "試合開始前に使徒を選択してください！試合中は変更できません(10点先取)。",
+        lblPlayerSelect: "自使徒:",
+        lblAiSelect: "相手使徒:",
+        targetAi: "AI",
+        lblAiName: "AI",
+        paddleUpTxt: "拡大！",
+        paddleDownTxt: "縮小！",
+        multiBall: "⭐ マルチボール！",
+        slimeSpawn: "🍮 スライムミミック出現！",
+        droneWarning: "⚠ ドローン接近！",
+        hitPlayer: "ナイスリターン！",
+        blockAi: "AIブロック！",
+        blockOpponent: "相手ブロック！",
+        serveAuto: "サーブまで {sec}秒...",
+        startPlayerBadge: "先攻プレイヤー",
+        introCountdown: "試合開始まで {sec}秒...",
+        winFinal: "勝利しました！🎉",
+        loseFinal: "敗北しました... 💧",
+        revengeBtn: "⚔️ 再戦する (リベンジ)",
+        cancelBtn: "🚪 終了 (キャンセル)",
+        revengeAsk: "もう一勝負しますか？",
+        revengeWaiting: "相手の再戦同意を待機中...",
+        nextRound: "次のセットへ準備中... ({sec}秒)",
+        point: "POINT!! 🎉",
+        miss: "MISS... 💧",
+        chars: { butter: "バター", rim: "リム", ner: "ネル", aya: "アヤ", daya: "ダーヤ" },
+        multiTitle: "🌐 1:1 P2P マルチプレイ",
+        multiDesc: "サーバー不要！ブラウザ間で直接P2P通信対戦を行います。",
+        multiHost: "1. ルーム作成 (ホスト)",
+        multiCreateBtn: "部屋を作成する",
+        multiMyCode: "ルームコード:",
+        multiTellFriend: "対戦相手にこのコードを共有してください！",
+        multiGuest: "2. ルーム参加 (ゲスト)",
+        multiInputPlaceholder: "コードを入力",
+        multiJoinBtn: "参加",
+        multiBackAi: "🤖 1人プレイ (AI対戦) に戻る",
+        multiConnecting: "サーバーに接続中...",
+        multiWaiting: "相手の参加を待機中...",
+        multiGuestConnected: "相手が参加しました！マッチング画面へ移動します。",
+        multiConnectingHost: "ホストに接続中...",
+        multiConnected: "接続成功！マッチング画面へ移動します。",
+        multiClosed: "相手との接続が切れました。メイン画面に戻ります。"
+      },
+      en: {
+        fontFamily: "'ONEMobilePOP', sans-serif",
+        title: "Apostle Pong (10 Sets)",
+        settings: "Settings",
+        initTitle: "✨ Initial Setup",
+        initLang: "Language",
+        initChar: "Choose your Apostle!",
+        initStartBtn: "Start Match 🚀",
+        nicknameTitle: "Player Nickname",
+        saveNickBtn: "Save",
+        nickSavedPrefix: "Saved Nickname",
+        bgm: "Music Volume (BGM)",
+        bgmLoopLabel: "BGM Play Mode",
+        bgmOnce: "Play Once & Stop",
+        bgmRepeat: "Loop Infinitely",
+        sfx: "Sound Effects (SFX)",
+        difficulty: "Difficulty (AI Match)",
+        language: "Language",
+        diffNames: { easy: "Easy", normal: "Normal", hard: "Hard" },
+        diffSetPrefix: "Difficulty: ",
+        guideYellow: "Pink Can: Paddle Expand",
+        guideGreen: "Sky Can: Paddle Shrink",
+        guidePurple: "Star Candy: Multi-Ball",
+        guideMacaron: "Mocaron: Slime Bumper",
+        controlGuide: "Pick your Apostle before starting! Locked during the 10-set match.",
+        lblPlayerSelect: "MY:",
+        lblAiSelect: "OPPONENT:",
+        targetAi: "AI",
+        lblAiName: "AI",
+        lblOpponentName: "OPPONENT",
+        paddleUpTxt: "EXPAND!",
+        paddleDownTxt: "SHRINK!",
+        multiBall: "⭐ MULTI BALL!!",
+        slimeSpawn: "🍮 Slime Mimic Spawned!",
+        droneWarning: "⚠ DRONE PASSING!!",
+        hitPlayer: "NICE RETURN!",
+        blockAi: "AI BLOCK!",
+        blockOpponent: "OPPONENT BLOCK!",
+        serveAuto: "Serving in {sec}s...",
+        startPlayerBadge: "FIRST PLAYER",
+        introCountdown: "Match starts in {sec}s...",
+        winFinal: "YOU WIN! 🎉",
+        loseFinal: "YOU LOSE... 💧",
+        revengeBtn: "⚔️ Revenge (Rematch)",
+        cancelBtn: "🚪 Quit (Cancel)",
+        revengeAsk: "Would you like a rematch?",
+        revengeWaiting: "Waiting for opponent to accept...",
+        nextRound: "Next round in {sec}s...",
+        point: "POINT!! 🎉",
+        miss: "MISS... 💧",
+        chars: { butter: "Butter", rim: "Rim", ner: "Ner", aya: "Aya", daya: "Daya" },
+        multiTitle: "🌐 1v1 P2P Multiplayer",
+        multiDesc: "Direct peer-to-peer connection without external game servers.",
+        multiHost: "1. Create Room (Host)",
+        multiCreateBtn: "Create Room",
+        multiMyCode: "Room Code:",
+        multiTellFriend: "Share this code with your friend!",
+        multiGuest: "2. Join Room (Guest)",
+        multiInputPlaceholder: "ENTER CODE",
+        multiJoinBtn: "Join",
+        multiBackAi: "🤖 Return to 1P (vs AI)",
+        multiConnecting: "Connecting to signaling server...",
+        multiWaiting: "Waiting for guest to join...",
+        multiGuestConnected: "Guest joined! Starting match intro...",
+        multiConnectingHost: "Connecting to host...",
+        multiConnected: "Connected! Starting match intro...",
+        multiClosed: "Opponent disconnected. Returning to main."
+      }
+    };
+
+    let curLang = 'ko';
+    let curDifficulty = 'normal';
+    const DIFF_CONFIG = {
+      easy:   { aiSpeed: 3.4, baseBallSpeed: 5.2 },
+      normal: { aiSpeed: 4.8, baseBallSpeed: 6.2 },
+      hard:   { aiSpeed: 6.8, baseBallSpeed: 7.4 }
+    };
+
+    const THEMES = {
+      butter: { main: '#68b833', dark: '#43801d', light: '#f4fbf0', border: 'rgba(104, 184, 51, 0.35)', bgPage: '#f0f7ec' },
+      rim:    { main: '#e380a9', dark: '#a83c6c', light: '#fdf3f7', border: 'rgba(227, 128, 169, 0.40)', bgPage: '#fbf0f4' },
+      ner:    { main: '#4a5a8e', dark: '#2c375c', light: '#f2f4f9', border: 'rgba(74, 90, 142, 0.40)', bgPage: '#edf0f7' },
+      aya:    { main: '#4fa8d8', dark: '#1e5f86', light: '#f0f8fd', border: 'rgba(79, 168, 216, 0.40)', bgPage: '#eaf4fa' },
+      daya:   { main: '#96b5c7', dark: '#4d697a', light: '#f4f7f9', border: 'rgba(150, 181, 199, 0.45)', bgPage: '#edf2f6' }
+    };
+
+    let curPlayerChar = 'butter';
+    let curAiChar = 'rim';
+
+    function applyTheme(charKey) {
+      const t = THEMES[charKey] || THEMES.butter;
+      const root = document.documentElement;
+      root.style.setProperty('--theme-main', t.main);
+      root.style.setProperty('--theme-dark', t.dark);
+      root.style.setProperty('--theme-light', t.light);
+      root.style.setProperty('--theme-border', t.border);
+      root.style.setProperty('--bg-page', t.bgPage);
+    }
+    applyTheme(curPlayerChar);
+
+    // [전용 프로필 얼굴 에셋 및 인게임 에셋 등록]
+    const ASSETS = {
+      butter: { src: 'player.png', img: null, upscaled: null },
+      rim:    { src: 'player_rim.png', img: null, upscaled: null },
+      ner:    { src: 'player_ner.png', img: null, upscaled: null },
+      aya:    { src: 'player_aya.png', img: null, upscaled: null },
+      daya:   { src: 'player_daya.png', img: null, upscaled: null },
+
+      // 사도별 전용 프로필 얼굴 에셋
+      face_butter: { src: 'butter.png', img: null, upscaled: null, dataUrl: null },
+      face_rim:    { src: 'dwqdqdsswdasdas.png', img: null, upscaled: null, dataUrl: null },
+      face_ner:    { src: 'NERU.png', img: null, upscaled: null, dataUrl: null },
+      face_aya:    { src: 'aya.png', img: null, upscaled: null, dataUrl: null },
+      face_daya:   { src: 'DAYAYA.png', img: null, upscaled: null, dataUrl: null },
+
+      slime:  { src: 'slime.png', img: null, upscaled: null },
+      drone:  { src: 'drone.png', img: null, upscaled: null },
+      ballItem: { src: 'item_red.png', img: null, upscaled: null },
+      item_yellow:  { src: 'item_yellow.png', img: null, upscaled: null },
+      item_green:   { src: 'item_green.png',  img: null, upscaled: null },
+      item_purple:  { src: 'item_purple.png', img: null, upscaled: null },
+      item_macaron: { src: 'item_macaron.png', img: null, upscaled: null }
+    };
+
+    // [무손실 정수배 업스케일러 캐시 엔진]
+    function createUpscaledCanvas(img, scale = 4) {
+      const oc = document.createElement('canvas');
+      oc.width = img.naturalWidth * scale;
+      oc.height = img.naturalHeight * scale;
+      const octx = oc.getContext('2d');
+      octx.imageSmoothingEnabled = false;
+      octx.drawImage(img, 0, 0, oc.width, oc.height);
+      return oc;
+    }
+
+    // 에셋 로딩 및 4배 업스케일러 자동 적용
+    Object.keys(ASSETS).forEach(k => {
+      const asset = ASSETS[k];
+      const img = new Image();
+      img.src = asset.src;
+      img.onload = () => { 
+        asset.img = img;
+        const upCanvas = createUpscaledCanvas(img, 4);
+        asset.upscaled = upCanvas;
+        
+        // 얼굴 프로필 에셋인 경우 dataUrl을 추출해 UI 엘리먼트 고화질 교체
+        if (k.startsWith('face_')) {
+          const charKey = k.replace('face_', '');
+          asset.dataUrl = upCanvas.toDataURL('image/png');
+          
+          // 모달 내 픽커 이미지 갱신
+          const modalImg = document.getElementById(`modalPickImg_${charKey}`);
+          if (modalImg) modalImg.src = asset.dataUrl;
+
+          // 현재 선택된 사도 아바타 갱신
+          updateCharMiniAvatars();
+        }
+      };
+    });
+
+    const CHAR_FACES = {
+      butter: 'butter.png',
+      rim:    'dwqdqdsswdasdas.png',
+      ner:    'NERU.png',
+      aya:    'aya.png',
+      daya:   'DAYAYA.png'
+    };
+
+    function updateCharMiniAvatars() {
+      const pImg = document.getElementById('myAvatarMini');
+      const aImg = document.getElementById('aiAvatarMini');
+
+      const pFaceAsset = ASSETS['face_' + curPlayerChar];
+      const aFaceAsset = ASSETS['face_' + curAiChar];
+
+      if (pImg) {
+        pImg.src = (pFaceAsset && pFaceAsset.dataUrl) ? pFaceAsset.dataUrl : (CHAR_FACES[curPlayerChar] || 'butter.png');
+        pImg.classList.add('pop');
+        setTimeout(() => pImg.classList.remove('pop'), 200);
+      }
+      if (aImg) {
+        aImg.src = (aFaceAsset && aFaceAsset.dataUrl) ? aFaceAsset.dataUrl : (CHAR_FACES[curAiChar] || 'dwqdqdsswdasdas.png');
+        aImg.classList.add('pop');
+        setTimeout(() => aImg.classList.remove('pop'), 200);
+      }
+    }
+
+    function selectInitialChar(charKey) {
+      ['butter', 'rim', 'ner', 'aya', 'daya'].forEach(k => {
+        const el = document.getElementById(`pick_${k}`);
+        if (el) el.classList.toggle('active', k === charKey);
+      });
+      curPlayerChar = charKey;
+      document.getElementById('playerCharSelect').value = curPlayerChar;
+      applyTheme(curPlayerChar);
+      updateCharMiniAvatars();
+    }
+
+    function confirmInitialSetup() {
+      document.getElementById('initModal').style.display = 'none';
+      prepareServeState();
+      startMatchIntro();
+    }
+
+    function updateOpponentNameUI() {
+      const isMulti = (netMode !== 'OFFLINE');
+      const oppTxt = isMulti ? opponentNickname : I18N[curLang].lblAiName;
+      document.getElementById('lblOpponent').innerText = oppTxt;
+      document.getElementById('lblScorePlayer').innerText = myNickname;
+    }
+
+    function updateCharSelectLockState() {
+      const pSelect = document.getElementById('playerCharSelect');
+      const aSelect = document.getElementById('aiCharSelect');
+      const row = document.getElementById('charSelectRow');
+
+      const shouldLock = (gameState === 'PLAYING' || gameState === 'ROUND_OVER' || gameState === 'MATCH_INTRO' || gameState === 'MATCH_OVER');
+      pSelect.disabled = shouldLock;
+      aSelect.disabled = shouldLock || (netMode !== 'OFFLINE');
+
+      if (shouldLock) {
+        row.classList.add('locked');
+      } else {
+        row.classList.remove('locked');
+      }
+    }
+
+    // =============================================================
+    // [리벤지 / 취소 팝업 시스템]
+    // =============================================================
+    let revengeRequestedByMe = false;
+
+    function showRevengeModal(isWinner) {
+      const titleElem = document.getElementById('matchResultTitle');
+      titleElem.innerText = isWinner ? I18N[curLang].winFinal : I18N[curLang].loseFinal;
+      titleElem.style.color = isWinner ? '#16a34a' : '#dc2626';
+
+      document.getElementById('matchResultSub').innerText = I18N[curLang].revengeAsk;
+      document.getElementById('btnRevengeAction').innerText = I18N[curLang].revengeBtn;
+      document.getElementById('btnCancelAction').innerText = I18N[curLang].cancelBtn;
+      document.getElementById('revengeStatusTxt').innerText = '';
+      revengeRequestedByMe = false;
+
+      document.getElementById('revengeModal').style.display = 'flex';
+    }
+
+    function hideRevengeModal() {
+      document.getElementById('revengeModal').style.display = 'none';
+      document.getElementById('revengeStatusTxt').innerText = '';
+    }
+
+    function onRevengeClicked() {
+      if (netMode === 'OFFLINE') {
+        hideRevengeModal();
+        prepareServeState();
+        startMatchIntro();
+        return;
+      }
+
+      revengeRequestedByMe = true;
+      document.getElementById('revengeStatusTxt').innerText = I18N[curLang].revengeWaiting;
+
+      if (conn && conn.open) {
+        conn.send({ type: 'REVENGE_REQUEST' });
+      }
+    }
+
+    function onCancelMatchClicked() {
+      hideRevengeModal();
+      if (netMode !== 'OFFLINE') {
+        disconnectMulti(true);
+      } else {
+        prepareServeState();
+      }
+    }
+
+    // =============================================================
+    // [양측 배너 충돌 + 5초 대기 인트로 연출 모듈]
+    // =============================================================
+    let matchIntroTimer = 0;
+    const MATCH_INTRO_DURATION = 330;
+    const SLIDE_DURATION = 30;
+    let hasClashed = false;
+    let autoServeTimer = 180;
+
+    function startMatchIntro() {
+      gameState = 'MATCH_INTRO';
+      matchIntroTimer = MATCH_INTRO_DURATION;
+      hasClashed = false;
+      updateCharSelectLockState();
+    }
+
+    function drawMatchIntro(dt) {
+      matchIntroTimer -= dt;
+      if (matchIntroTimer <= 0) {
+        gameState = 'SERVE';
+        autoServeTimer = 180;
+        updateCharSelectLockState();
+        return;
+      }
+
+      const elapsed = MATCH_INTRO_DURATION - matchIntroTimer;
+      const slideProg = Math.min(1.0, elapsed / SLIDE_DURATION);
+
+      const c1 = 1.70158;
+      const c3 = c1 + 1;
+      const ease = (slideProg < 1.0)
+        ? 1 + c3 * Math.pow(slideProg - 1, 3) + c1 * Math.pow(slideProg - 1, 2)
+        : 1.0;
+
+      // 충돌 순간 맑은 라운드 벨 사운드 재생
+      if (slideProg >= 1.0 && !hasClashed) {
+        hasClashed = true;
+        triggerScreenShake(35);
+        playRoundBellSound();
+      }
+
+      const leftOffset = (1.0 - ease) * (-viewW * 0.7);
+      const rightOffset = (1.0 - ease) * (viewW * 0.7);
+
+      ctx.fillStyle = '#9fd2fa';
+      ctx.fillRect(0, 0, viewW, viewH);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(80, 50, 24, 0, Math.PI * 2);
+      ctx.arc(110, 45, 32, 0, Math.PI * 2);
+      ctx.arc(140, 50, 24, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(viewW - 100, 70, 26, 0, Math.PI * 2);
+      ctx.arc(viewW - 70, 65, 34, 0, Math.PI * 2);
+      ctx.arc(viewW - 40, 70, 26, 0, Math.PI * 2);
+      ctx.fill();
+
+      const centerY = viewH / 2 - 10;
+      const cardH = 210;
+
+      // 1P 카드 (좌측 배너)
+      const card1X = 15 + leftOffset;
+      ctx.save();
+      ctx.fillStyle = '#bbf7d0';
+      ctx.fillRect(card1X, centerY - cardH / 2, viewW / 2 - 20, cardH);
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(card1X, centerY - cardH / 2, viewW / 2 - 20, cardH);
+
+      ctx.fillStyle = '#86efac';
+      ctx.fillRect(card1X + 2, centerY - cardH / 2 + 2, viewW / 2 - 24, 28);
+      ctx.fillStyle = '#15803d';
+      ctx.font = `bold 13px ${I18N[curLang].fontFamily}`;
+      ctx.fillText('1P PLAYER', card1X + 12, centerY - cardH / 2 + 21);
+      ctx.restore();
+
+      // 2P 카드 (우측 배너)
+      const card2X = viewW / 2 + 5 + rightOffset;
+      ctx.save();
+      ctx.fillStyle = '#fed7aa';
+      ctx.fillRect(card2X, centerY - cardH / 2, viewW / 2 - 20, cardH);
+      ctx.strokeStyle = '#f97316';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(card2X, centerY - cardH / 2, viewW / 2 - 20, cardH);
+
+      ctx.fillStyle = '#fdba74';
+      ctx.fillRect(card2X + 2, centerY - cardH / 2 + 2, viewW / 2 - 24, 28);
+      ctx.fillStyle = '#c2410c';
+      ctx.font = `bold 13px ${I18N[curLang].fontFamily}`;
+      ctx.fillText((netMode !== 'OFFLINE' ? '2P PLAYER' : 'AI BOT'), card2X + 12, centerY - cardH / 2 + 21);
+      ctx.restore();
+
+      // [레이어 1단계]: 사도 전신 이미지 먼저 렌더링
+      const introHop1 = Math.abs(Math.sin((MATCH_INTRO_DURATION - matchIntroTimer) * 0.18)) * 14;
+      const introHop2 = Math.abs(Math.sin((MATCH_INTRO_DURATION - matchIntroTimer) * 0.18 + Math.PI / 2)) * 14;
+
+      const leftCharKey = (netMode === 'CLIENT') ? curAiChar : curPlayerChar;
+      const rightCharKey = (netMode === 'CLIENT') ? curPlayerChar : curAiChar;
+
+      const leftAsset = ASSETS[leftCharKey];
+      const leftSource = leftAsset ? (leftAsset.upscaled || leftAsset.img) : null;
+      if (leftSource) {
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+        ctx.translate(95 + leftOffset, centerY - 25 - introHop1);
+        ctx.drawImage(leftSource, -42, -50, 84, 98);
+        ctx.restore();
+      }
+
+      const rightAsset = ASSETS[rightCharKey];
+      const rightSource = rightAsset ? (rightAsset.upscaled || rightAsset.img) : null;
+      if (rightSource) {
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+        ctx.translate(viewW - 105 + rightOffset, centerY - 25 - introHop2);
+        ctx.scale(-1, 1);
+        ctx.drawImage(rightSource, -42, -50, 84, 98);
+        ctx.restore();
+      }
+
+      // [레이어 2단계 - 맨앞 레이어]: 닉네임 배너 박스 (업스케일된 고화질 도트 얼굴 렌더링)
+      const leftName = (netMode === 'CLIENT') ? opponentNickname : myNickname;
+      const rightName = (netMode === 'CLIENT') ? myNickname : opponentNickname;
+
+      // 1P 닉네임 배너
+      ctx.save();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+      ctx.beginPath();
+      ctx.roundRect(24 + leftOffset, centerY + 36, viewW / 2 - 38, 48, 12);
+      ctx.fill();
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // 원형 프로필 액자 내부에 무손실 업스케일링 얼굴 배치
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(46 + leftOffset, centerY + 60, 16, 0, Math.PI * 2);
+      ctx.fillStyle = THEMES[leftCharKey].light;
+      ctx.fill();
+      ctx.clip();
+      
+      const leftFaceAsset = ASSETS['face_' + leftCharKey];
+      const leftFaceSource = leftFaceAsset ? (leftFaceAsset.upscaled || leftFaceAsset.img) : null;
+      if (leftFaceSource) {
+        ctx.imageSmoothingEnabled = false; // 도트 번짐 방지
+        ctx.drawImage(leftFaceSource, 46 + leftOffset - 17, centerY + 60 - 17, 34, 34);
+      }
+      ctx.restore();
+
+      ctx.beginPath();
+      ctx.arc(46 + leftOffset, centerY + 60, 16, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      ctx.fillStyle = '#0f172a';
+      ctx.font = `14px ${I18N[curLang].fontFamily}`;
+      ctx.textAlign = 'left';
+      ctx.fillText(leftName, 70 + leftOffset, centerY + 65);
+
+      // 시작 플레이어 뱃지
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.roundRect(28 + leftOffset, centerY + 87, 76, 18, 8);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold 10px ${I18N[curLang].fontFamily}`;
+      ctx.textAlign = 'center';
+      ctx.fillText(I18N[curLang].startPlayerBadge, 66 + leftOffset, centerY + 100);
+      ctx.restore();
+
+      // 2P 닉네임 배너
+      ctx.save();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+      ctx.beginPath();
+      ctx.roundRect(viewW / 2 + 14 + rightOffset, centerY + 36, viewW / 2 - 38, 48, 12);
+      ctx.fill();
+      ctx.strokeStyle = '#f97316';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // 2P 원형 프로필 액자 내부에 무손실 업스케일링 얼굴 배치
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(viewW / 2 + 36 + rightOffset, centerY + 60, 16, 0, Math.PI * 2);
+      ctx.fillStyle = THEMES[rightCharKey].light;
+      ctx.fill();
+      ctx.clip();
+      
+      const rightFaceAsset = ASSETS['face_' + rightCharKey];
+      const rightFaceSource = rightFaceAsset ? (rightFaceAsset.upscaled || rightFaceAsset.img) : null;
+      if (rightFaceSource) {
+        ctx.imageSmoothingEnabled = false; // 도트 번짐 방지
+        ctx.drawImage(rightFaceSource, viewW / 2 + 36 + rightOffset - 17, centerY + 60 - 17, 34, 34);
+      }
+      ctx.restore();
+
+      ctx.beginPath();
+      ctx.arc(viewW / 2 + 36 + rightOffset, centerY + 60, 16, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      ctx.fillStyle = '#0f172a';
+      ctx.font = `14px ${I18N[curLang].fontFamily}`;
+      ctx.textAlign = 'left';
+      const dispOppName = (netMode !== 'OFFLINE') ? opponentNickname : I18N[curLang].lblAiName;
+      ctx.fillText(dispOppName, viewW / 2 + 58 + rightOffset, centerY + 65);
+      ctx.restore();
+
+      // VS 폭발 마크 & 5초 타이머
+      if (hasClashed) {
+        ctx.save();
+        ctx.translate(viewW / 2, centerY - 28);
+        const vsPop = Math.min(1.0, (elapsed - SLIDE_DURATION) / 10);
+        const vsPulse = vsPop * (1.0 + Math.sin((MATCH_INTRO_DURATION - matchIntroTimer) * 0.25) * 0.08);
+        ctx.scale(vsPulse, vsPulse);
+
+        ctx.fillStyle = '#f43f5e';
+        ctx.beginPath();
+        const points = 16;
+        for (let p = 0; p < points * 2; p++) {
+          const r = (p % 2 === 0) ? 46 : 28;
+          const angle = (p * Math.PI) / points;
+          const vx = Math.cos(angle) * r;
+          const vy = Math.sin(angle) * r;
+          if (p === 0) ctx.moveTo(vx, vy);
+          else ctx.lineTo(vx, vy);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3.5;
+        ctx.stroke();
+
+        ctx.font = `900 28px ${I18N[curLang].fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#7c2d12';
+        ctx.fillText('VS', 2, 11);
+        ctx.fillStyle = '#fef08a';
+        ctx.fillText('VS', 0, 9);
+        ctx.restore();
+
+        const remainingSec = Math.max(1, Math.ceil(matchIntroTimer / 60));
+        ctx.save();
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
+        ctx.beginPath();
+        ctx.roundRect(viewW / 2 - 105, viewH - 65, 210, 36, 18);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold 14px ${I18N[curLang].fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(I18N[curLang].introCountdown.replace('{sec}', remainingSec), viewW / 2, viewH - 42);
+        ctx.restore();
+      }
+    }
+
+    // =============================================================
+    // P2P 멀티플레이 통신 엔진
+    // =============================================================
+    let peer = null;
+    let conn = null;
+    let netMode = 'OFFLINE';
+    let guestMouseX = viewW / 2;
+
+    function openMultiModal() { document.getElementById('multiModal').style.display = 'flex'; }
+    function closeMultiModal() { document.getElementById('multiModal').style.display = 'none'; }
+
+    function generateRoomCode() {
+      return 'TRICK-' + Math.floor(1000 + Math.random() * 9000);
+    }
+
+    function initPeer(callback) {
+      if (peer && !peer.destroyed) { callback(); return; }
+      peer = new Peer(generateRoomCode());
+      peer.on('open', () => { callback(); });
+      peer.on('error', (err) => {
+        document.getElementById('multiStatusTxt').innerText = 'Network error: ' + err.type;
+      });
+    }
+
+    function createRoom() {
+      document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiConnecting;
+      initPeer(() => {
+        netMode = 'HOST';
+        updateOpponentNameUI();
+        document.getElementById('roomCodeDisplay').style.display = 'block';
+        document.getElementById('myRoomId').innerText = peer.id;
+        document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiWaiting;
+
+        peer.on('connection', (c) => {
+          conn = c;
+          setupConnHandlers();
+          document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiGuestConnected;
+          setTimeout(() => {
+            closeMultiModal();
+            prepareServeState();
+            startMatchIntro();
+            if (conn && conn.open) conn.send({ type: 'START_INTRO', hostChar: curPlayerChar, hostNick: myNickname });
+          }, 600);
+        });
+      });
+    }
+
+    function joinRoom() {
+      const code = document.getElementById('joinRoomInput').value.trim();
+      if (!code) { 
+        alert(curLang === 'ko' ? '방 코드를 입력해주세요!' : (curLang === 'ja' ? 'コードを入力してください！' : 'Please enter room code!')); 
+        return; 
+      }
+      document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiConnectingHost;
+      initPeer(() => {
+        netMode = 'CLIENT';
+        updateOpponentNameUI();
+        conn = peer.connect(code, { reliable: true });
+        setupConnHandlers();
+      });
+    }
+
+    function setupConnHandlers() {
+      conn.on('open', () => {
+        document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiConnected;
+        conn.send({ type: 'NICKNAME', name: myNickname });
+        conn.send({ type: 'CHAR', char: curPlayerChar });
+      });
+
+      conn.on('data', (data) => {
+        if (data.type === 'NICKNAME') {
+          opponentNickname = data.name || '상대';
+          updateOpponentNameUI();
+          return;
+        }
+
+        if (data.type === 'CHAR') {
+          curAiChar = data.char;
+          document.getElementById('aiCharSelect').value = curAiChar;
+          updateCharMiniAvatars();
+          return;
+        }
+
+        if (data.type === 'START_INTRO') {
+          if (data.hostChar) curAiChar = data.hostChar;
+          if (data.hostNick) opponentNickname = data.hostNick;
+          updateOpponentNameUI();
+          updateCharMiniAvatars();
+          closeMultiModal();
+          hideRevengeModal();
+          prepareServeState();
+          startMatchIntro();
+          return;
+        }
+
+        if (data.type === 'REVENGE_REQUEST') {
+          if (revengeRequestedByMe) {
+            hideRevengeModal();
+            if (netMode === 'HOST') {
+              prepareServeState();
+              startMatchIntro();
+              conn.send({ type: 'START_INTRO', hostChar: curPlayerChar, hostNick: myNickname });
+            }
+          } else {
+            document.getElementById('revengeStatusTxt').innerText = '상대방이 리벤지를 신청했습니다!';
+          }
+          return;
+        }
+
+        if (netMode === 'CLIENT') {
+          handleHostSyncPacket(data);
+        } else if (netMode === 'HOST') {
+          if (data.type === 'INPUT') {
+            guestMouseX = data.mouseX;
+          } else if (data.type === 'SERVE_TRIGGER') {
+            triggerServeFromClient();
+          }
+        }
+      });
+
+      conn.on('close', () => {
+        handlePeerDisconnected();
+      });
+    }
+
+    function handlePeerDisconnected() {
+      const msg = I18N[curLang].multiClosed;
+      hideRevengeModal();
+      disconnectMulti(false);
+      alert(msg);
+    }
+
+    window.addEventListener('beforeunload', () => {
+      if (conn && conn.open) {
+        conn.close();
+      }
+    });
+
+    function disconnectMulti(manual = false) {
+      if (conn) conn.close();
+      if (peer) peer.destroy();
+      peer = null;
+      conn = null;
+      netMode = 'OFFLINE';
+      opponentNickname = 'AI';
+      updateOpponentNameUI();
+      updateCharMiniAvatars();
+      document.getElementById('roomCodeDisplay').style.display = 'none';
+      document.getElementById('multiStatusTxt').innerText = '';
+      if (manual) closeMultiModal();
+      hideRevengeModal();
+      prepareServeState();
+    }
+
+    function handleHostSyncPacket(pkt) {
+      playerScore = pkt.guestScore;
+      aiScore = pkt.hostScore;
+      updateScoreUI();
+
+      ai.w = pkt.hostPaddleW;
+      ai.x = viewW - pkt.hostPaddleX - ai.w;
+      ai.y = 52;
+      if (pkt.hostChar && curAiChar !== pkt.hostChar) {
+        curAiChar = pkt.hostChar;
+        updateCharMiniAvatars();
+      }
+
+      if (pkt.guestPaddleW) {
+        player.w = pkt.guestPaddleW;
+      }
+
+      balls = (pkt.balls || []).map(b => {
+        const nb = new Ball(viewW - b.x, viewH - b.y, -b.vx, -b.vy);
+        nb.r = b.r || 13;
+        return nb;
+      });
+
+      fieldItems = (pkt.items || []).map(it => {
+        const ni = new FieldItem(it.type);
+        ni.x = viewW - it.x;
+        ni.y = viewH - it.y;
+        return ni;
+      });
+
+      slimeBumpers = (pkt.bumpers || []).map(sb => {
+        const nb = new SlimeBumper(viewW - sb.x, viewH - sb.y);
+        nb.r = sb.r || 24;
+        return nb;
+      });
+
+      if (pkt.drone) {
+        if (!activeDrone) activeDrone = new CrossingDrone();
+        activeDrone.x = viewW - pkt.drone.x;
+        activeDrone.y = viewH - pkt.drone.y;
+        activeDrone.dir = -pkt.drone.dir;
+      } else {
+        activeDrone = null;
+      }
+
+      if (pkt.gameState === 'MATCH_INTRO' && gameState !== 'MATCH_INTRO') {
+        startMatchIntro();
+      } else if (pkt.gameState !== 'MATCH_INTRO') {
+        gameState = pkt.gameState;
+      }
+
+      if (pkt.gameState === 'MATCH_OVER' && gameState !== 'MATCH_OVER') {
+        matchWinner = pkt.matchWinner === 'player' ? 'ai' : (pkt.matchWinner === 'ai' ? 'player' : null);
+        showRevengeModal(matchWinner === 'player');
+      }
+
+      matchWinner = pkt.matchWinner === 'player' ? 'ai' : (pkt.matchWinner === 'ai' ? 'player' : null);
+      updateCharSelectLockState();
+
+      if (pkt.sfx) playSound(pkt.sfx);
+      if (pkt.shake) triggerScreenShake(pkt.shake);
+    }
+
+    // =============================================================
+    // BGM & SFX 엔진
+    // =============================================================
+    let sfxVolume = 0.7;
+    let bgmVolume = 0.5;
+    let bgmLoopMode = false;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const sfxMasterGain = audioCtx.createGain();
+    sfxMasterGain.gain.setValueAtTime(sfxVolume, audioCtx.currentTime);
+    sfxMasterGain.connect(audioCtx.destination);
+
+    const bgmMasterGain = audioCtx.createGain();
+    bgmMasterGain.gain.setValueAtTime(bgmVolume, audioCtx.currentTime);
+    bgmMasterGain.connect(audioCtx.destination);
+
+    function ensureAudioUnlocked() {
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+    ['pointerdown', 'keydown', 'pointermove', 'touchstart'].forEach(evt => {
+      window.addEventListener(evt, ensureAudioUnlocked, { once: true, passive: true });
+    });
+
+    let currentBgmNode = null;
+    let prebakedBgmBuffer = null;
+
+    const melody1Min = [
+      523, 659, 784, 1046,  880, 784, 659, 784,   880, 0, 880, 1046,  784, 0, 0, 0,
+      523, 659, 784, 1046,  1174, 1046, 880, 784, 880, 1046, 1174, 1318, 1046, 0, 0, 0,
+      659, 784, 880, 1046,  988, 880, 784, 659,   587, 659, 698, 784,   659, 0, 523, 0,
+      523, 587, 659, 784,   880, 1046, 988, 784,  659, 784, 587, 493,   523, 0, 0, 0,
+
+      880, 880, 1046, 880,  784, 659, 587, 523,   659, 659, 784, 659,   587, 0, 392, 0,
+      880, 880, 1046, 1174, 1318, 1174, 1046, 880, 1046, 1174, 1046, 784, 880, 0, 0, 0,
+      1046, 988, 880, 784,  880, 784, 659, 587,   659, 587, 523, 440,   523, 0, 392, 0,
+      523, 659, 784, 880,   1046, 880, 784, 659,  587, 659, 587, 392,   523, 0, 0, 0,
+
+      1046, 1318, 1174, 1046, 880, 1046, 784, 880, 659, 784, 880, 1046, 1174, 0, 0, 0,
+      1318, 1568, 1318, 1174, 1046, 1174, 880, 784, 880, 1046, 1174, 1318, 1568, 0, 0, 0,
+      1568, 1318, 1174, 1046, 1174, 1046, 880, 784, 880, 784, 659, 587, 659, 0, 523, 0,
+      523, 659, 784, 880,   1046, 1174, 1318, 1568, 1318, 1046, 784, 587, 523, 0, 0, 0,
+
+      659, 0, 587, 0,   523, 0, 392, 0,   440, 0, 523, 0,   587, 0, 0, 0,
+      659, 0, 587, 0,   523, 0, 659, 0,   784, 0, 880, 0,   1046, 0, 0, 0,
+      880, 784, 659, 587, 523, 392, 329, 261, 293, 349, 392, 440, 523, 0, 392, 0,
+      523, 523, 659, 659, 784, 784, 1046, 0, 784, 659, 587, 493, 523, 0, 0, 0
+    ];
+
+    const bass1Min = [
+      130, 261, 130, 196, 174, 349, 174, 261, 196, 392, 196, 293, 146, 293, 146, 220,
+      130, 261, 130, 196, 174, 349, 174, 261, 196, 392, 196, 293, 130, 0,   130, 0
+    ];
+
+    function render1MinBgmAudioBuffer() {
+      if (prebakedBgmBuffer) return prebakedBgmBuffer;
+      const sr = 22050;
+      const stepDur = 0.165;
+      const totalSteps = melody1Min.length;
+      const totalSamples = Math.floor(totalSteps * stepDur * sr);
+      const buffer = audioCtx.createBuffer(1, totalSamples, sr);
+      const d = buffer.getChannelData(0);
+
+      for (let s = 0; s < totalSteps; s++) {
+        const startIdx = Math.floor(s * stepDur * sr);
+        const endIdx = Math.floor((s + 1) * stepDur * sr);
+        const melFreq = melody1Min[s];
+        const bassFreq = (s % 2 === 0) ? (bass1Min[Math.floor(s / 2) % bass1Min.length] / 2) : 0;
+
+        for (let i = startIdx; i < endIdx && i < totalSamples; i++) {
+          const t = (i - startIdx) / sr;
+          let val = 0;
+
+          if (melFreq > 0) {
+            const env = Math.exp(-t * 9.0);
+            val += Math.sin(2 * Math.PI * melFreq * t) * 0.35 * env;
+            val += Math.sin(4 * Math.PI * melFreq * t) * 0.1 * env;
+          }
+
+          if (bassFreq > 0) {
+            const bEnv = Math.exp(-t * 7.0);
+            val += Math.sin(2 * Math.PI * bassFreq * t) * 0.45 * bEnv;
+          }
+
+          if (s % 4 === 0) {
+            const kEnv = Math.exp(-t * 28.0);
+            const kPitch = 40 + 110 * Math.exp(-t * 40.0);
+            val += Math.sin(2 * Math.PI * kPitch * t) * 0.35 * kEnv;
+          }
+
+          if (s % 4 === 2) {
+            const sEnv = Math.exp(-t * 32.0);
+            val += ((Math.sin(2 * Math.PI * 180 * t) > 0 ? 0.2 : -0.2) * sEnv);
+          }
+
+          d[i] = Math.max(-0.95, Math.min(0.95, val * 0.7));
+        }
+      }
+
+      prebakedBgmBuffer = buffer;
+      return buffer;
+    }
+
+    function stopBgm() {
+      if (currentBgmNode) {
+        try { currentBgmNode.stop(); } catch(e){}
+        currentBgmNode.disconnect();
+        currentBgmNode = null;
+      }
+    }
+
+    function startCleanChiptuneBgm() {
+      stopBgm();
+      ensureAudioUnlocked();
+      if (bgmVolume <= 0.01) return;
+
+      const buffer = render1MinBgmAudioBuffer();
+      const node = audioCtx.createBufferSource();
+      node.buffer = buffer;
+      node.loop = bgmLoopMode;
+      node.connect(bgmMasterGain);
+      node.start(0);
+      currentBgmNode = node;
+
+      node.onended = () => {
+        if (currentBgmNode === node) currentBgmNode = null;
+      };
+    }
+
+    function setBgmLoopMode(isLoop) {
+      bgmLoopMode = isLoop;
+      if (currentBgmNode) currentBgmNode.loop = bgmLoopMode;
+      document.getElementById('btnBgmOnce').classList.toggle('active', !bgmLoopMode);
+      document.getElementById('btnBgmLoop').classList.toggle('active', bgmLoopMode);
+    }
+
+    function playRoundBellSound() {
+      if (sfxVolume <= 0.01) return;
+      ensureAudioUnlocked();
+
+      try {
+        const now = audioCtx.currentTime;
+        const bellFreqs = [880, 1760, 2640];
+        bellFreqs.forEach((freq, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = (idx === 0) ? 'sine' : 'triangle';
+          osc.frequency.setValueAtTime(freq, now);
+
+          const vol = (idx === 0 ? 0.65 : (0.28 / idx)) * Math.max(sfxVolume, 0.5);
+          gain.gain.setValueAtTime(vol, now);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.2);
+
+          osc.connect(gain);
+          gain.connect(sfxMasterGain);
+          osc.start(now);
+          osc.stop(now + 2.2);
+        });
+      } catch (err) {
+        console.warn('AudioContext playback error:', err);
+      }
+    }
+
+    function playSynthFallback(type) {
+      if (sfxVolume <= 0.01) return;
+      ensureAudioUnlocked();
+
+      if (type === 'round_bell') {
+        playRoundBellSound();
+        return;
+      }
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(sfxMasterGain);
+      const now = audioCtx.currentTime;
+
+      if (type === 'wall') {
+        osc.frequency.setValueAtTime(240, now);
+        osc.frequency.exponentialRampToValueAtTime(140, now + 0.08);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+        osc.start(now); osc.stop(now + 0.08);
+      } else if (type === 'hit') {
+        osc.frequency.setValueAtTime(420, now);
+        osc.frequency.exponentialRampToValueAtTime(260, now + 0.1);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+        osc.start(now); osc.stop(now + 0.1);
+      } else if (type === 'eat') {
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.linearRampToValueAtTime(840, now + 0.15);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+        osc.start(now); osc.stop(now + 0.15);
+      } else if (type === 'bounce') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(640, now + 0.12);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+        osc.start(now); osc.stop(now + 0.12);
+      } else if (type === 'drone') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.linearRampToValueAtTime(280, now + 0.25);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+        osc.start(now); osc.stop(now + 0.25);
+      } else if (type === 'game_over') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(90, now + 0.6);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.6);
+        osc.start(now); osc.stop(now + 0.6);
+      }
+    }
+
+    const SOUNDS = {
+      wall: new Audio('wall.wav'),
+      hit: new Audio('hit.wav'),
+      eat: new Audio('eat.wav'),
+      game_over: new Audio('game_over.wav')
+    };
+
+    ['wall', 'hit', 'eat', 'game_over'].forEach(key => {
+      SOUNDS[key].addEventListener('error', () => {
+        SOUNDS[key] = new Audio(`${key}.mp3`);
+        SOUNDS[key].addEventListener('error', () => { SOUNDS[key] = null; });
+      });
+    });
+
+    function playSound(type) {
+      if (sfxVolume <= 0.01) return;
+      if (type === 'round_bell') {
+        playRoundBellSound();
+        return;
+      }
+      const snd = SOUNDS[type];
+      if (snd && snd.play) {
+        snd.volume = sfxVolume;
+        snd.currentTime = 0;
+        snd.play().catch(() => playSynthFallback(type));
+      } else {
+        playSynthFallback(type);
+      }
+    }
+
+    function setBgmVolume(val) {
+      bgmVolume = parseFloat(val);
+      bgmMasterGain.gain.setValueAtTime(bgmVolume, audioCtx.currentTime);
+      document.getElementById('valBgm').innerText = `${Math.round(bgmVolume * 100)}%`;
+      if (bgmVolume > 0 && !currentBgmNode) {
+        startCleanChiptuneBgm();
+      } else if (bgmVolume <= 0.01) {
+        stopBgm();
+      }
+    }
+
+    function setSfxVolume(val) {
+      sfxVolume = parseFloat(val);
+      sfxMasterGain.gain.setValueAtTime(sfxVolume, audioCtx.currentTime);
+      document.getElementById('valSfx').innerText = `${Math.round(sfxVolume * 100)}%`;
+    }
+
+    let shakeTimer = 0;
+    function triggerScreenShake(durationFrames = 90) {
+      shakeTimer = durationFrames;
+    }
+
+    let playerScore = 0;
+    let aiScore = 0;
+    let gameState = 'SERVE';
+    let matchWinner = null;
+
+    const PADDLE_SIZES = [86, 116, 146];
+
+    const player = {
+      x: viewW / 2 - 43,
+      y: viewH - 42,
+      lastX: viewW / 2 - 43,
+      level: 0,
+      w: PADDLE_SIZES[0],
+      h: 20,
+      charW: 54,
+      charH: 62,
+      bounceTimer: 0
+    };
+
+    const ai = {
+      x: viewW / 2 - 43,
+      y: 52,
+      lastX: viewW / 2 - 43,
+      level: 0,
+      w: PADDLE_SIZES[0],
+      h: 20,
+      speed: DIFF_CONFIG.normal.aiSpeed,
+      charW: 54,
+      charH: 62,
+      bounceTimer: Math.PI / 2
+    };
+
+    function setPaddleLevel(target, lvl) {
+      target.level = Math.max(0, Math.min(2, lvl));
+      const oldW = target.w;
+      target.w = PADDLE_SIZES[target.level];
+      target.x -= (target.w - oldW) / 2;
+      if (target.x < 15) target.x = 15;
+      if (target.x + target.w > viewW - 15) target.x = viewW - 15 - target.w;
+    }
+
+    let balls = [];
+
+    class Ball {
+      constructor(x, y, vx, vy) {
+        this.x = x;
+        this.y = y;
+        this.r = 13;
+        this.vx = vx;
+        this.vy = vy;
+        this.lastHitter = 'player';
+      }
+
+      update(dt) {
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+
+        if (this.x - this.r <= 19) {
+          this.x = 19 + this.r;
+          this.vx = -this.vx;
+          playSound('wall');
+          if (netMode === 'HOST' && conn) conn.send({ type: 'EVENT', sfx: 'wall' });
+        }
+        if (this.x + this.r >= viewW - 19) {
+          this.x = viewW - 19 - this.r;
+          this.vx = -this.vx;
+          playSound('wall');
+          if (netMode === 'HOST' && conn) conn.send({ type: 'EVENT', sfx: 'wall' });
+        }
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(Math.floor(this.x), Math.floor(this.y));
+        const bAsset = ASSETS.ballItem;
+        const source = bAsset.upscaled || bAsset.img;
+        if (source) {
+          ctx.drawImage(source, -this.r, -this.r, this.r * 2, this.r * 2);
+        } else {
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.arc(0, 0, this.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#b91c1c';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
+
+    function resetBalls(server = 'player') {
+      balls = [];
+      const baseSpeed = DIFF_CONFIG[curDifficulty].baseBallSpeed;
+      const vy = (server === 'player') ? -baseSpeed : baseSpeed;
+      balls.push(new Ball(viewW / 2, viewH / 2, (Math.random() - 0.5) * 3, vy));
+    }
+
+    let slimeBumpers = [];
+    class SlimeBumper {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.r = 24;
+        this.life = 750;
+        this.scaleTimer = Math.random() * Math.PI;
+      }
+      update(dt) { this.life -= dt; this.scaleTimer += 0.1 * dt; }
+      draw() {
+        ctx.save();
+        const pulse = Math.sin(this.scaleTimer) * 2;
+        const w = (this.r + pulse) * 2;
+        const h = (this.r + pulse) * 2;
+        ctx.translate(Math.floor(this.x), Math.floor(this.y));
+
+        const sAsset = ASSETS.slime;
+        const source = sAsset.upscaled || sAsset.img;
+        if (source) {
+          ctx.drawImage(source, -w / 2, -h / 2, w, h);
+        } else {
+          ctx.fillStyle = '#22c55e';
+          ctx.beginPath();
+          ctx.arc(0, 0, this.r + pulse, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
+    let activeDrone = null;
+    let droneCooldown = 0;
+    class CrossingDrone {
+      constructor() {
+        this.dir = Math.random() < 0.5 ? 1 : -1;
+        this.w = 52; this.h = 52;
+        this.x = this.dir > 0 ? -60 : viewW + 60;
+        this.baseY = viewH / 2 + (Math.random() - 0.5) * 40;
+        this.y = this.baseY;
+        this.speed = 8.5;
+        this.timer = 0;
+      }
+      update(dt) {
+        this.timer += dt * 0.1;
+        this.x += this.dir * this.speed * dt;
+        this.y = this.baseY + Math.sin(this.timer) * 12;
+      }
+      draw() {
+        ctx.save();
+        ctx.translate(Math.floor(this.x), Math.floor(this.y));
+        if (this.dir < 0) ctx.scale(-1, 1);
+        const dAsset = ASSETS.drone;
+        const source = dAsset.upscaled || dAsset.img;
+        if (source) {
+          ctx.drawImage(source, -this.w / 2, -this.h / 2, this.w, this.h);
+        }
+        ctx.restore();
+      }
+    }
+
+    let fieldItems = [];
+    let itemSpawnTimer = 0;
+    class FieldItem {
+      constructor(type) {
+        this.type = type;
+        this.w = 34; this.h = 34;
+        this.x = Math.floor(Math.random() * (viewW - 140)) + 70;
+        this.y = Math.floor(Math.random() * (viewH / 2)) + (viewH / 4);
+        this.life = 700;
+        this.animTimer = 0;
+      }
+      update(dt) { this.life -= dt; this.animTimer += dt; }
+      draw() {
+        ctx.save();
+        const floatY = Math.sin(this.animTimer * 0.08) * 3;
+        ctx.translate(Math.floor(this.x), Math.floor(this.y + floatY));
+        const asset = ASSETS['item_' + this.type];
+        const source = asset.upscaled || asset.img;
+        if (source) {
+          ctx.drawImage(source, -this.w / 2, -this.h / 2, this.w, this.h);
+        }
+        ctx.restore();
+      }
+    }
+
+    let popups = [];
+    class PopupText {
+      constructor(x, y, text, color) {
+        this.x = x; this.y = y; this.text = text; this.color = color;
+        this.life = 45;
+      }
+      update(dt) { this.y -= 1.0 * dt; this.life -= dt; }
+      draw() {
+        ctx.fillStyle = this.color;
+        ctx.font = `15px ${I18N[curLang].fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(this.text, this.x, this.y);
+      }
+    }
+
+    function updateAI(dt) {
+      if (balls.length === 0) return;
+      let targetBall = balls[0];
+      let minY = 9999;
+      for (let b of balls) {
+        if (b.vy < 0 && b.y < minY) {
+          minY = b.y;
+          targetBall = b;
+        }
+      }
+
+      const targetX = targetBall.x - ai.w / 2;
+      const diff = targetX - ai.x;
+      if (targetBall.vy < 0) {
+        if (Math.abs(diff) > 4) {
+          ai.x += Math.sign(diff) * Math.min(ai.speed, Math.abs(diff)) * dt;
+        }
+      } else {
+        const centerDiff = (viewW / 2 - ai.w / 2) - ai.x;
+        if (Math.abs(centerDiff) > 6) {
+          ai.x += Math.sign(centerDiff) * 2.0 * dt;
+        }
+      }
+
+      if (ai.x < 15) ai.x = 15;
+      if (ai.x + ai.w > viewW - 15) ai.x = viewW - 15 - ai.w;
+    }
+
+    canvas.addEventListener('pointermove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      
+      player.x = mouseX - player.w / 2;
+      if (player.x < 15) player.x = 15;
+      if (player.x + player.w > viewW - 15) player.x = viewW - 15 - player.w;
+
+      if (netMode === 'CLIENT' && conn && conn.open) {
+        conn.send({ type: 'INPUT', mouseX: viewW - mouseX });
+      }
+    });
+
+    canvas.addEventListener('pointerdown', () => {
+      ensureAudioUnlocked();
+      if (!currentBgmNode && bgmVolume > 0 && gameState !== 'MATCH_INTRO' && gameState !== 'MATCH_OVER') {
+        startCleanChiptuneBgm();
+      }
+    });
+
+    function triggerServeFromClient() {
+      handleServeOrReset();
+    }
+
+    function prepareServeState() {
+      stopBgm();
+      gameState = 'SERVE';
+      autoServeTimer = 180;
+      playerScore = 0;
+      aiScore = 0;
+      matchWinner = null;
+      setPaddleLevel(player, 0);
+      setPaddleLevel(ai, 0);
+      slimeBumpers = [];
+      fieldItems = [];
+      balls = [];
+      activeDrone = null;
+      updateScoreUI();
+      updateOpponentNameUI();
+      updateCharMiniAvatars();
+      updateCharSelectLockState();
+    }
+
+    function handleServeOrReset() {
+      if (gameState === 'SERVE' || gameState === 'ROUND_OVER') {
+        gameState = 'PLAYING';
+        updateCharSelectLockState();
+        if (bgmVolume > 0 && !currentBgmNode) {
+          startCleanChiptuneBgm();
+        }
+        resetBalls('player');
+      }
+    }
+
+    function updateScoreUI() {
+      document.getElementById('pScoreTxt').innerText = playerScore;
+      document.getElementById('aiScoreTxt').innerText = aiScore;
+    }
+
+    function changePlayerChar(val) {
+      if (gameState === 'PLAYING' || gameState === 'ROUND_OVER' || gameState === 'MATCH_INTRO' || gameState === 'MATCH_OVER') return;
+      curPlayerChar = val;
+      applyTheme(curPlayerChar);
+      updateCharMiniAvatars();
+      if (conn && conn.open) {
+        conn.send({ type: 'CHAR', char: curPlayerChar });
+      }
+    }
+
+    function changeAiChar(val) {
+      if (gameState === 'PLAYING' || gameState === 'ROUND_OVER' || gameState === 'MATCH_INTRO' || gameState === 'MATCH_OVER') return;
+      curAiChar = val;
+      updateCharMiniAvatars();
+    }
+
+    function openSettings() { document.getElementById('settingsModal').style.display = 'flex'; }
+    function closeSettings() { document.getElementById('settingsModal').style.display = 'none'; }
+
+    function setDifficulty(diff) {
+      curDifficulty = diff;
+      ai.speed = DIFF_CONFIG[curDifficulty].aiSpeed;
+      ['Easy', 'Normal', 'Hard'].forEach(d => {
+        document.getElementById('btnDiff' + d).classList.toggle('active', curDifficulty.toLowerCase() === d.toLowerCase());
+      });
+      popups.push(new PopupText(viewW / 2, viewH / 2 - 20, `${I18N[curLang].diffSetPrefix}${I18N[curLang].diffNames[diff]}`, THEMES[curPlayerChar].dark));
+    }
+
+    function setLanguage(lang) {
+      curLang = lang;
+      const dict = I18N[curLang];
+
+      document.documentElement.style.setProperty('--app-font', dict.fontFamily);
+      document.getElementById('titleTxt').innerText = dict.title;
+      document.getElementById('modalHeader').innerText = dict.settings;
+      document.getElementById('initModalTitle').innerText = dict.initTitle;
+      document.getElementById('lblInitLang').innerText = dict.initLang;
+      document.getElementById('lblInitChar').innerText = dict.initChar;
+      document.getElementById('btnConfirmStart').innerText = dict.initStartBtn;
+
+      document.getElementById('lblNicknameTitle').innerText = dict.nicknameTitle;
+      document.getElementById('btnSaveNickname').innerText = dict.saveNickBtn;
+      document.getElementById('lblBgm').innerText = dict.bgm;
+      document.getElementById('lblBgmLoop').innerText = dict.bgmLoopLabel;
+      document.getElementById('btnBgmOnce').innerText = dict.bgmOnce;
+      document.getElementById('btnBgmLoop').innerText = dict.bgmRepeat;
+      document.getElementById('lblSfx').innerText = dict.sfx;
+      document.getElementById('lblDifficulty').innerText = dict.difficulty;
+      document.getElementById('lblLang').innerText = dict.language;
+
+      document.getElementById('btnDiffEasy').innerText = dict.diffNames.easy;
+      document.getElementById('btnDiffNormal').innerText = dict.diffNames.normal;
+      document.getElementById('btnDiffHard').innerText = dict.diffNames.hard;
+
+      document.getElementById('guideYellow').innerText = dict.guideYellow;
+      document.getElementById('guideGreen').innerText = dict.guideGreen;
+      document.getElementById('guidePurple').innerText = dict.guidePurple;
+      document.getElementById('guideMacaron').innerText = dict.guideMacaron;
+      document.getElementById('bottomControlGuide').innerText = dict.controlGuide;
+
+      document.getElementById('lblPlayer').innerText = dict.lblPlayerSelect;
+      document.getElementById('lblAi').innerText = dict.lblAiSelect;
+
+      document.getElementById('multiModalTitle').innerText = dict.multiTitle;
+      document.getElementById('multiDescTxt').innerText = dict.multiDesc;
+      document.getElementById('multiHostTitle').innerText = dict.multiHost;
+      document.getElementById('btnCreateRoom').innerText = dict.multiCreateBtn;
+      document.getElementById('lblMyRoomCode').innerText = dict.multiMyCode;
+      document.getElementById('lblTellFriend').innerText = dict.multiTellFriend;
+      document.getElementById('multiGuestTitle').innerText = dict.multiGuest;
+      document.getElementById('joinRoomInput').placeholder = dict.multiInputPlaceholder;
+      document.getElementById('btnJoinRoom').innerText = dict.multiJoinBtn;
+      document.getElementById('btnBackToAi').innerText = dict.multiBackAi;
+
+      document.getElementById('btnRevengeAction').innerText = dict.revengeBtn;
+      document.getElementById('btnCancelAction').innerText = dict.cancelBtn;
+      document.getElementById('matchResultSub').innerText = dict.revengeAsk;
+
+      updateOpponentNameUI();
+
+      const pSelect = document.getElementById('playerCharSelect');
+      const aSelect = document.getElementById('aiCharSelect');
+      for (let opt of pSelect.options) opt.text = dict.chars[opt.value];
+      for (let opt of aSelect.options) opt.text = dict.chars[opt.value];
+
+      ['butter', 'rim', 'ner', 'aya', 'daya'].forEach(k => {
+        const span = document.getElementById(`txtPick_${k}`);
+        if (span) span.innerText = dict.chars[k];
+      });
+
+      ['Ko', 'Ja', 'En'].forEach(l => {
+        document.getElementById('btnLang' + l).classList.toggle('active', curLang.toLowerCase() === l.toLowerCase());
+        document.getElementById('btnInit' + l).classList.toggle('active', curLang.toLowerCase() === l.toLowerCase());
+      });
+    }
+
+    // =============================================================
+    // 메인 루프 (자동 서브 & 인트로 연출 지원)
+    // =============================================================
+    let lastTime = performance.now();
+
+    function loop(currentTime) {
+      const elapsed = currentTime - lastTime;
+      lastTime = currentTime;
+      const dt = Math.min(elapsed / 16.666, 3.0) || 1.0;
+
+      let shakeOffsetX = 0;
+      let shakeOffsetY = 0;
+      if (shakeTimer > 0) {
+        shakeTimer -= dt;
+        const intensity = Math.min(shakeTimer / 15, 3.5);
+        shakeOffsetX = (Math.random() - 0.5) * intensity * 2;
+        shakeOffsetY = (Math.random() - 0.5) * intensity * 2;
+        gameFrame.style.transform = `translate(${shakeOffsetX}px, ${shakeOffsetY}px)`;
+      } else {
+        gameFrame.style.transform = 'translate(0px, 0px)';
+      }
+
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      if (gameState === 'MATCH_INTRO') {
+        drawMatchIntro(dt);
+        ctx.restore();
+        requestAnimationFrame(loop);
+        return;
+      }
+
+      // 3초 자동 서브
+      if (gameState === 'SERVE' || gameState === 'ROUND_OVER') {
+        if (netMode !== 'CLIENT') {
+          autoServeTimer -= dt;
+          if (autoServeTimer <= 0) {
+            handleServeOrReset();
+          }
+        }
+      }
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, viewW, viewH);
+
+      ctx.strokeStyle = THEMES[curPlayerChar].border;
+      ctx.lineWidth = 3;
+      ctx.setLineDash([8, 8]);
+      ctx.beginPath();
+      ctx.moveTo(15, viewH / 2);
+      ctx.lineTo(viewW - 15, viewH / 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.strokeStyle = THEMES[curPlayerChar].main;
+      ctx.lineWidth = 4;
+      ctx.strokeRect(15, 15, viewW - 30, viewH - 30);
+
+      if (netMode !== 'CLIENT') {
+        if (netMode === 'HOST') {
+          ai.x = guestMouseX - ai.w / 2;
+          if (ai.x < 15) ai.x = 15;
+          if (ai.x + ai.w > viewW - 15) ai.x = viewW - 15 - ai.w;
+        } else {
+          if (gameState === 'PLAYING') updateAI(dt);
+        }
+
+        if (gameState === 'PLAYING') {
+          itemSpawnTimer += dt;
+          if (itemSpawnTimer >= 220) {
+            itemSpawnTimer = 0;
+            if (fieldItems.length < 2) {
+              const types = ['yellow', 'green', 'purple', 'macaron'];
+              fieldItems.push(new FieldItem(types[Math.floor(Math.random() * types.length)]));
+            }
+          }
+
+          for (let i = fieldItems.length - 1; i >= 0; i--) {
+            const item = fieldItems[i];
+            item.update(dt);
+            if (item.life <= 0) fieldItems.splice(i, 1);
+          }
+
+          for (let sIdx = slimeBumpers.length - 1; sIdx >= 0; sIdx--) {
+            const sb = slimeBumpers[sIdx];
+            sb.update(dt);
+            if (sb.life <= 0) slimeBumpers.splice(sIdx, 1);
+          }
+
+          if (droneCooldown > 0) {
+            droneCooldown -= dt;
+          } else if (!activeDrone && Math.random() < 0.02 * dt) {
+            activeDrone = new CrossingDrone();
+            droneCooldown = 400;
+            playSound('drone');
+            popups.push(new PopupText(viewW / 2, viewH / 2 - 25, I18N[curLang].droneWarning, '#ef4444'));
+          }
+
+          if (activeDrone) {
+            activeDrone.update(dt);
+            if ((activeDrone.dir > 0 && activeDrone.x > viewW + 80) || (activeDrone.dir < 0 && activeDrone.x < -80)) {
+              activeDrone = null;
+            }
+          }
+
+          for (let bIdx = balls.length - 1; bIdx >= 0; bIdx--) {
+            const b = balls[bIdx];
+            b.update(dt);
+
+            if (activeDrone) {
+              const distDrone = Math.hypot(b.x - activeDrone.x, b.y - activeDrone.y);
+              if (distDrone < b.r + activeDrone.w / 2) {
+                b.vx += (Math.random() - 0.5) * 8;
+                b.vy = -b.vy * 1.05;
+                playSound('hit');
+              }
+            }
+
+            for (let sb of slimeBumpers) {
+              const dx = b.x - sb.x;
+              const dy = b.y - sb.y;
+              const dist = Math.hypot(dx, dy);
+              if (dist < b.r + sb.r) {
+                const nx = dx / (dist || 1);
+                const ny = dy / (dist || 1);
+                const speed = Math.hypot(b.vx, b.vy) * 1.06;
+                b.vx = nx * speed;
+                b.vy = ny * speed;
+                b.x = sb.x + nx * (b.r + sb.r + 2);
+                b.y = sb.y + ny * (b.r + sb.r + 2);
+                playSound('bounce');
+              }
+            }
+
+            for (let iIdx = fieldItems.length - 1; iIdx >= 0; iIdx--) {
+              const item = fieldItems[iIdx];
+              const dist = Math.hypot(b.x - item.x, b.y - item.y);
+              if (dist < b.r + item.w / 2) {
+                const userTarget = (b.lastHitter === 'player') ? player : ai;
+                const isUserPlayer = (b.lastHitter === 'player');
+                const isMulti = (netMode !== 'OFFLINE');
+                const targetName = isUserPlayer 
+                  ? myNickname 
+                  : (isMulti ? opponentNickname : I18N[curLang].targetAi);
+
+                playSound('eat');
+
+                if (item.type === 'yellow') {
+                  setPaddleLevel(userTarget, userTarget.level + 1);
+                  popups.push(new PopupText(item.x, item.y, `${targetName} ${I18N[curLang].paddleUpTxt}`, '#ca8a04'));
+                } else if (item.type === 'green') {
+                  setPaddleLevel(userTarget, userTarget.level - 1);
+                  popups.push(new PopupText(item.x, item.y, `${targetName} ${I18N[curLang].paddleDownTxt}`, '#0284c7'));
+                } else if (item.type === 'purple') {
+                  balls.push(new Ball(item.x, item.y, -4.5, b.vy > 0 ? 5.5 : -5.5));
+                  balls.push(new Ball(item.x, item.y, 4.5, b.vy > 0 ? 5.5 : -5.5));
+                  popups.push(new PopupText(item.x, item.y, I18N[curLang].multiBall, '#9333ea'));
+                } else if (item.type === 'macaron') {
+                  slimeBumpers.push(new SlimeBumper(Math.random() * 260 + 80, viewH / 2 - 40));
+                  slimeBumpers.push(new SlimeBumper(Math.random() * 260 + 80, viewH / 2 + 40));
+                  popups.push(new PopupText(item.x, item.y, I18N[curLang].slimeSpawn, '#f97316'));
+                }
+                fieldItems.splice(iIdx, 1);
+              }
+            }
+
+            if (
+              b.y + b.r >= player.y &&
+              b.y - b.r <= player.y + player.h &&
+              b.x >= player.x - 4 &&
+              b.x <= player.x + player.w + 4 &&
+              b.vy > 0
+            ) {
+              b.lastHitter = 'player';
+              const hitOffset = (b.x - (player.x + player.w / 2)) / (player.w / 2);
+              b.vx = hitOffset * 7.0;
+              b.vy = -Math.abs(b.vy) * 1.025;
+              playSound('hit');
+              popups.push(new PopupText(b.x, player.y - 12, I18N[curLang].hitPlayer, THEMES[curPlayerChar].dark));
+            }
+
+            if (
+              b.y - b.r <= ai.y + ai.h &&
+              b.y + b.r >= ai.y &&
+              b.x >= ai.x - 4 &&
+              b.x <= ai.x + ai.w + 4 &&
+              b.vy < 0
+            ) {
+              b.lastHitter = 'ai';
+              const hitOffset = (b.x - (ai.x + ai.w / 2)) / (ai.w / 2);
+              b.vx = hitOffset * 7.0;
+              b.vy = Math.abs(b.vy) * 1.025;
+              playSound('hit');
+              const blockTxt = (netMode !== 'OFFLINE') ? `${opponentNickname} 가드!` : I18N[curLang].blockAi;
+              popups.push(new PopupText(b.x, ai.y + ai.h + 20, blockTxt, THEMES[curAiChar].dark));
+            }
+
+            if (b.y < 12) {
+              playerScore++;
+              updateScoreUI();
+              balls.splice(bIdx, 1);
+              popups.push(new PopupText(viewW / 2, viewH / 2 - 20, I18N[curLang].point, '#16a34a'));
+
+              if (playerScore >= 10) {
+                gameState = 'MATCH_OVER';
+                matchWinner = 'player';
+                stopBgm();
+                balls = [];
+                fieldItems = [];
+                slimeBumpers = [];
+                activeDrone = null;
+                updateCharSelectLockState();
+                showRevengeModal(true);
+                break;
+              } else {
+                autoServeTimer = 180;
+              }
+            } else if (b.y > viewH + 15) {
+              aiScore++;
+              updateScoreUI();
+              balls.splice(bIdx, 1);
+              triggerScreenShake(90);
+              popups.push(new PopupText(viewW / 2, viewH / 2 + 20, I18N[curLang].miss, '#dc2626'));
+
+              if (aiScore >= 10) {
+                gameState = 'MATCH_OVER';
+                matchWinner = 'ai';
+                stopBgm();
+                playSound('game_over');
+                balls = [];
+                fieldItems = [];
+                slimeBumpers = [];
+                activeDrone = null;
+                updateCharSelectLockState();
+                showRevengeModal(false);
+                break;
+              } else {
+                autoServeTimer = 180;
+              }
+            }
+          }
+
+          if (gameState === 'PLAYING' && balls.length === 0) {
+            fieldItems = [];
+            slimeBumpers = [];
+            activeDrone = null;
+            gameState = 'ROUND_OVER';
+            autoServeTimer = 180;
+          }
+        }
+
+        if (netMode === 'HOST' && conn && conn.open) {
+          conn.send({
+            hostScore: playerScore,
+            guestScore: aiScore,
+            hostPaddleX: player.x,
+            hostPaddleW: player.w,
+            guestPaddleW: ai.w,
+            hostChar: curPlayerChar,
+            balls: balls.map(b => ({ x: b.x, y: b.y, vx: b.vx, vy: b.vy, r: b.r })),
+            items: fieldItems.map(it => ({ x: it.x, y: it.y, type: it.type })),
+            bumpers: slimeBumpers.map(sb => ({ x: sb.x, y: sb.y, r: sb.r })),
+            drone: activeDrone ? { x: activeDrone.x, y: activeDrone.y, dir: activeDrone.dir } : null,
+            gameState: gameState,
+            autoServeTimer: autoServeTimer,
+            matchWinner: matchWinner
+          });
+        }
+      }
+
+      const playerSpeed = Math.abs(player.x - player.lastX);
+      player.lastX = player.x;
+      player.bounceTimer += (0.16 + playerSpeed * 0.05) * dt;
+      const playerHop = Math.abs(Math.sin(player.bounceTimer)) * 9;
+      const playerSquash = (playerHop < 1.5) ? 0.92 : 1.0;
+
+      const aiSpeed = Math.abs(ai.x - ai.lastX);
+      ai.lastX = ai.x;
+      ai.bounceTimer += (0.16 + aiSpeed * 0.05) * dt;
+      const aiHop = Math.abs(Math.sin(ai.bounceTimer)) * 9;
+      const aiSquash = (aiHop < 1.5) ? 0.92 : 1.0;
+
+      slimeBumpers.forEach(sb => sb.draw());
+      fieldItems.forEach(item => item.draw());
+      if (activeDrone) activeDrone.draw();
+
+      ctx.fillStyle = THEMES[curAiChar].dark;
+      ctx.fillRect(Math.floor(ai.x), Math.floor(ai.y), ai.w, ai.h);
+
+      const aiAsset = ASSETS[curAiChar];
+      const aiSource = aiAsset ? (aiAsset.upscaled || aiAsset.img) : null;
+      if (aiSource) {
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+        const drawAiX = Math.floor(ai.x + ai.w / 2);
+        const drawAiY = Math.floor(ai.y - 16 - aiHop);
+        ctx.translate(drawAiX, drawAiY);
+        ctx.scale(1.0 / aiSquash, aiSquash);
+        ctx.drawImage(aiSource, -ai.charW / 2, -ai.charH / 2, ai.charW, ai.charH);
+        ctx.restore();
+      }
+
+      ctx.fillStyle = THEMES[curPlayerChar].main;
+      ctx.fillRect(Math.floor(player.x), Math.floor(player.y), player.w, player.h);
+
+      const pAsset = ASSETS[curPlayerChar];
+      const pSource = pAsset ? (pAsset.upscaled || pAsset.img) : null;
+      if (pSource) {
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+        const drawPX = Math.floor(player.x + player.w / 2);
+        const drawPY = Math.floor(player.y - 14 - playerHop);
+        ctx.translate(drawPX, drawPY);
+        ctx.scale(1.0 / playerSquash, playerSquash);
+        ctx.drawImage(pSource, -player.charW / 2, -player.charH / 2, player.charW, player.charH);
+        ctx.restore();
+      }
+
+      balls.forEach(b => b.draw());
+
+      for (let i = popups.length - 1; i >= 0; i--) {
+        popups[i].update(dt);
+        popups[i].draw();
+        if (popups[i].life <= 0) popups.splice(i, 1);
+      }
+
+      const serveRemainingSec = Math.max(1, Math.ceil(autoServeTimer / 60));
+      if (gameState === 'SERVE') {
+        ctx.fillStyle = THEMES[curPlayerChar].dark;
+        ctx.font = `18px ${I18N[curLang].fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(I18N[curLang].serveAuto.replace('{sec}', serveRemainingSec), viewW / 2, viewH / 2 + 35);
+      } else if (gameState === 'ROUND_OVER') {
+        ctx.fillStyle = THEMES[curPlayerChar].dark;
+        ctx.font = `18px ${I18N[curLang].fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(I18N[curLang].nextRound.replace('{sec}', serveRemainingSec), viewW / 2, viewH / 2 + 35);
+      }
+
+      ctx.restore();
+      requestAnimationFrame(loop);
+    }
+
+    initNicknameUI();
+    setLanguage('ko');
+    prepareServeState();
+    updateCharMiniAvatars();
+
+    document.getElementById('initModal').style.display = 'flex';
+    requestAnimationFrame((t) => { lastTime = t; loop(t); });
+  </script>
+</body>
+</html>
