@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>사도 핑퐁 - Apostle Pong</title>
-  <script type="text/javascript" nonce="8da5cbfe58a741ac9078c394d37" src="//local.adguard.org?ts=1790943983650&amp;type=content-script&amp;dmn=chatgpt.com&amp;url=https%3A%2F%2Fchatgpt.com%2Fbackend-api%2Festuary%2Fcontent%3Fid%3Dfile_00000000402881fab54a993f0859bf1e%26fn%3Dapostle-pong-p2p-fixed.html%26cd%3Dattachment%26ts%3D497484%26p%3Dfs%26cid%3D1%26sig%3Df5b16d1d9466bc9db5b4e859ed76ef3adce1ae0b47abc4234e448785301a637c%26v%3D0&amp;app=chrome.exe&amp;css=2&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1"></script><script type="text/javascript" nonce="8da5cbfe58a741ac9078c394d37" src="//local.adguard.org?ts=1790943983650&amp;name=AdGuard%20Extra&amp;name=AdGuard%20Popup%20Blocker&amp;type=user-script"></script><script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script type="text/javascript" nonce="8da5cbfe58a741ac9078c394d37" src="//local.adguard.org?ts=1790943983650&amp;type=content-script&amp;dmn=chatgpt.com&amp;url=https%3A%2F%2Fchatgpt.com%2Fbackend-api%2Festuary%2Fcontent%3Fid%3Dfile_0000000046e4820bb36976c2964f4c06%26ts%3D497484%26p%3Dfs%26cid%3D1%26sig%3D9f7e9dff8c2d63b49b1d941225d83dba517ee008c6ccd4e0b3ce40f8633ee05c%26v%3D0&amp;app=chrome.exe&amp;css=2&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1"></script><script type="text/javascript" nonce="8da5cbfe58a741ac9078c394d37" src="//local.adguard.org?ts=1790943983650&amp;name=AdGuard%20Extra&amp;name=AdGuard%20Popup%20Blocker&amp;type=user-script"></script><script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <style>
     @font-face {
       font-family: 'ONEMobilePOP';
@@ -1392,10 +1392,17 @@
             try { c.close(); } catch (e) {}
             return;
           }
+
           conn = c;
           pendingHostStart = true;
-          setupConnHandlers();
           document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiGuestConnected;
+          setupConnHandlers();
+
+          // PeerJS에서는 connection 이벤트가 먼저 오거나, 반대로 이미
+          // open 상태인 DataConnection이 들어오는 경우도 있으므로 둘 다 처리한다.
+          if (conn && conn.open) {
+            setTimeout(startHostMatch, 50);
+          }
         });
       });
     }
@@ -1423,7 +1430,8 @@
 
         if (netMode === 'HOST') {
           // 실제 DataConnection이 OPEN 된 뒤에만 게임을 시작한다.
-          setTimeout(startHostMatch, 200);
+          // open 이벤트 타이밍이 이미 지나간 경우도 대비한다.
+          setTimeout(startHostMatch, 50);
         } else if (netMode === 'CLIENT') {
           setTimeout(() => closeMultiModal(), 300);
         }
