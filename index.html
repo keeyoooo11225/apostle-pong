@@ -631,6 +631,23 @@
   </div>
 
   <script>
+    // 호환성 방어 코드 (모바일/인앱 브라우저에서 ctx.roundRect 에러 발생 방지)
+    function drawSafeRoundRect(context, x, y, width, height, radius) {
+      if (typeof context.roundRect === 'function') {
+        context.roundRect(x, y, width, height, radius);
+      } else {
+        context.moveTo(x + radius, y);
+        context.lineTo(x + width - radius, y);
+        context.quadraticCurveTo(x + width, y, x + width, y + radius);
+        context.lineTo(x + width, y + height - radius);
+        context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        context.lineTo(x + radius, y + height);
+        context.quadraticCurveTo(x, y + height, x, y + height - radius);
+        context.lineTo(x, y + radius);
+        context.quadraticCurveTo(x, y, x + radius, y);
+      }
+    }
+
     const canvas = document.getElementById('pongCanvas');
     const ctx = canvas.getContext('2d');
     const gameFrame = document.getElementById('gameFrame');
@@ -717,7 +734,7 @@
         introCountdown: "게임 시작까지 {sec}초...",
         winFinal: "승리했습니다! 🎉",
         loseFinal: "패배했습니다... 💧",
-        revengeBtn: "⚔️ 리벤지 (다시 하기)",
+        revengeBtn: "⚔️️ 리벤지 (다시 하기)",
         cancelBtn: "🚪 나가기 (취소)",
         revengeAsk: "다시 한 판 승부를 겨루시겠습니까?",
         revengeWaiting: "상대방의 리벤지 수락을 기다리는 중...",
@@ -1199,7 +1216,7 @@
       ctx.save();
       ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
       ctx.beginPath();
-      ctx.roundRect(24 + leftOffset, centerY + 36, viewW / 2 - 38, 48, 12);
+      drawSafeRoundRect(ctx, 24 + leftOffset, centerY + 36, viewW / 2 - 38, 48, 12);
       ctx.fill();
       ctx.strokeStyle = '#22c55e';
       ctx.lineWidth = 2.5;
@@ -1233,7 +1250,7 @@
 
       ctx.fillStyle = '#ef4444';
       ctx.beginPath();
-      ctx.roundRect(28 + leftOffset, centerY + 87, 76, 18, 8);
+      drawSafeRoundRect(ctx, 28 + leftOffset, centerY + 87, 76, 18, 8);
       ctx.fill();
       ctx.fillStyle = '#ffffff';
       ctx.font = `bold 10px ${I18N[curLang].fontFamily}`;
@@ -1244,7 +1261,7 @@
       ctx.save();
       ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
       ctx.beginPath();
-      ctx.roundRect(viewW / 2 + 14 + rightOffset, centerY + 36, viewW / 2 - 38, 48, 12);
+      drawSafeRoundRect(ctx, viewW / 2 + 14 + rightOffset, centerY + 36, viewW / 2 - 38, 48, 12);
       ctx.fill();
       ctx.strokeStyle = '#f97316';
       ctx.lineWidth = 2.5;
@@ -1314,7 +1331,7 @@
         ctx.save();
         ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
         ctx.beginPath();
-        ctx.roundRect(viewW / 2 - 105, viewH - 65, 210, 36, 18);
+        drawSafeRoundRect(ctx, viewW / 2 - 105, viewH - 65, 210, 36, 18);
         ctx.fill();
         ctx.fillStyle = '#ffffff';
         ctx.font = `bold 14px ${I18N[curLang].fontFamily}`;
@@ -1548,7 +1565,7 @@
     }
 
     // =============================================================
-    // 포인터 좌표 입력 처리 보강 (게스트 좌우 반전 및 비율 보정)
+    // 포인터 좌표 입력 처리 보강
     // =============================================================
     function handlePointerCoord(clientX) {
       const rect = canvas.getBoundingClientRect();
@@ -2083,7 +2100,7 @@
       if (ai.x + ai.w > viewW - 15) ai.x = viewW - 15 - ai.w;
     }
 
-    // 메인 게임 루프 (방어 코드 및 렌더링 강제 유지)
+    // 메인 게임 루프 (호환성 방어 및 강제 동기화)
     let lastTime = performance.now();
 
     function loop(currentTime) {
