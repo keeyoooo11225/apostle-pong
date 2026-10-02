@@ -1325,7 +1325,7 @@
     }
 
     // =============================================================
-    // P2P 멀티플레이 통신 엔진 (원래 잘 되던 순정 구조)
+    // P2P 멀티플레이 통신 엔진 (순정 원본 구조 및 서브 동기화 보강)
     // =============================================================
     let peer = null;
     let conn = null;
@@ -1782,7 +1782,7 @@
         playRoundBellSound();
         return;
       }
-      const snd = SOUNDS[key];
+      const snd = SOUNDS[type];
       if (snd && snd.play) {
         snd.volume = sfxVolume;
         snd.currentTime = 0;
@@ -2119,6 +2119,9 @@
     function openSettings() { document.getElementById('settingsModal').style.display = 'flex'; }
     function closeSettings() { document.getElementById('settingsModal').style.display = 'none'; }
 
+    function openPatchModal() { document.getElementById('patchModal').style.display = 'flex'; }
+    function closePatchModal() { document.getElementById('patchModal').style.display = 'none'; }
+
     function setDifficulty(diff) {
       curDifficulty = diff;
       ai.speed = DIFF_CONFIG[curDifficulty].aiSpeed;
@@ -2139,12 +2142,15 @@
       document.getElementById('lblInitLang').innerText = dict.initLang;
       document.getElementById('lblInitChar').innerText = dict.initChar;
       document.getElementById('btnConfirmStart').innerText = dict.initStartBtn;
+      document.getElementById('patchModalTitle').innerText = dict.patchTitle;
+      document.getElementById('patchTextItem').innerText = dict.patchDesc;
+      document.getElementById('creditFooter').innerHTML = dict.creditHtml;
 
       document.getElementById('lblNicknameTitle').innerText = dict.nicknameTitle;
       document.getElementById('btnSaveNickname').innerText = dict.saveNickBtn;
       document.getElementById('lblBgm').innerText = dict.bgm;
       document.getElementById('lblBgmLoop').innerText = dict.bgmLoopLabel;
-      document.getElementById('btnBgmOnce').innerText = dict.btnBgmOnce || dict.bgmOnce;
+      document.getElementById('btnBgmOnce').innerText = dict.bgmOnce;
       document.getElementById('btnBgmLoop').innerText = dict.bgmRepeat;
       document.getElementById('lblSfx').innerText = dict.sfx;
       document.getElementById('lblDifficulty').innerText = dict.difficulty;
