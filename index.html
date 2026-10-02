@@ -140,6 +140,8 @@
       border: 2.5px solid var(--theme-main);
       border-radius: 18px;
       cursor: none;
+      -ms-interpolation-mode: nearest-neighbor;
+      image-rendering: -webkit-optimize-contrast;
       image-rendering: pixelated;
       image-rendering: crisp-edges;
       touch-action: none;
@@ -200,8 +202,8 @@
     }
 
     .char-avatar-mini {
-      width: 25px;
-      height: 25px;
+      width: 26px;
+      height: 26px;
       border-radius: 50%;
       border: 1.5px solid var(--theme-border);
       background: #ffffff;
@@ -432,23 +434,23 @@
         <div class="modal-label" id="lblInitChar">플레이할 사도를 선택하세요!</div>
         <div class="char-picker-grid">
           <div class="char-pick-card active" id="pick_butter" onclick="selectInitialChar('butter')">
-            <img id="modalPickImg_butter" src="butter.png" alt="버터">
+            <img src="butter.png" alt="버터">
             <span id="txtPick_butter">버터</span>
           </div>
           <div class="char-pick-card" id="pick_rim" onclick="selectInitialChar('rim')">
-            <img id="modalPickImg_rim" src="dwqdqdsswdasdas.png" alt="림">
+            <img src="dwqdqdsswdasdas.png" alt="림">
             <span id="txtPick_rim">림</span>
           </div>
           <div class="char-pick-card" id="pick_ner" onclick="selectInitialChar('ner')">
-            <img id="modalPickImg_ner" src="NERU.png" alt="네르">
+            <img src="NERU.png" alt="네르">
             <span id="txtPick_ner">네르</span>
           </div>
           <div class="char-pick-card" id="pick_aya" onclick="selectInitialChar('aya')">
-            <img id="modalPickImg_aya" src="aya.png" alt="아야">
+            <img src="aya.png" alt="아야">
             <span id="txtPick_aya">아야</span>
           </div>
           <div class="char-pick-card" id="pick_daya" onclick="selectInitialChar('daya')">
-            <img id="modalPickImg_daya" src="DAYAYA.png" alt="다야">
+            <img src="DAYAYA.png" alt="다야">
             <span id="txtPick_daya">다야</span>
           </div>
         </div>
@@ -659,7 +661,7 @@
         introCountdown: "게임 시작까지 {sec}초...",
         winFinal: "승리했습니다! 🎉",
         loseFinal: "패배했습니다... 💧",
-        revengeBtn: "⚔️ 리벤지 (다시 하기)",
+        revengeBtn: "⚔️️ 리벤지 (다시 하기)",
         revengeAcceptBtn: "⚔️ 리벤지 수락하기!",
         cancelBtn: "🚪 나가기 (취소)",
         revengeAsk: "다시 한 판 승부를 겨루시겠습니까?",
@@ -721,7 +723,7 @@
         multiBall: "⭐ マルチボール！",
         slimeSpawn: "🍮 スライムミミック出現！",
         droneWarning: "⚠ ドローン接近！",
-        hitPlayer: "ナイスリターン！",
+        hitPlayer: "ナ이스リターン！",
         blockAi: "AIブロック！",
         blockOpponent: "相手ブロック！",
         serveAuto: "サーブまで {sec}秒...",
@@ -729,7 +731,7 @@
         introCountdown: "試合開始まで {sec}秒...",
         winFinal: "勝利しました！🎉",
         loseFinal: "敗北しました... 💧",
-        revengeBtn: "⚔️ 再戦する (リベンジ)",
+        revengeBtn: "⚔️ 再戦する (リ벤지)",
         revengeAcceptBtn: "⚔️ 再戦を受ける！",
         cancelBtn: "🚪 終了 (キャンセル)",
         revengeAsk: "もう一勝負しますか？",
@@ -867,11 +869,11 @@
       aya:    { src: 'player_aya.png', img: null, upscaled: null },
       daya:   { src: 'player_daya.png', img: null, upscaled: null },
 
-      face_butter: { src: 'butter.png', img: null, upscaled: null, dataUrl: null },
-      face_rim:    { src: 'dwqdqdsswdasdas.png', img: null, upscaled: null, dataUrl: null },
-      face_ner:    { src: 'NERU.png', img: null, upscaled: null, dataUrl: null },
-      face_aya:    { src: 'aya.png', img: null, upscaled: null, dataUrl: null },
-      face_daya:   { src: 'DAYAYA.png', img: null, upscaled: null, dataUrl: null },
+      face_butter: { src: 'butter.png', img: null, upscaled: null },
+      face_rim:    { src: 'dwqdqdsswdasdas.png', img: null, upscaled: null },
+      face_ner:    { src: 'NERU.png', img: null, upscaled: null },
+      face_aya:    { src: 'aya.png', img: null, upscaled: null },
+      face_daya:   { src: 'DAYAYA.png', img: null, upscaled: null },
 
       slime:  { src: 'slime.png', img: null, upscaled: null },
       drone:  { src: 'drone.png', img: null, upscaled: null },
@@ -883,13 +885,17 @@
     };
 
     function createUpscaledCanvas(img, scale = 4) {
-      const oc = document.createElement('canvas');
-      oc.width = img.naturalWidth * scale;
-      oc.height = img.naturalHeight * scale;
-      const octx = oc.getContext('2d');
-      octx.imageSmoothingEnabled = false;
-      octx.drawImage(img, 0, 0, oc.width, oc.height);
-      return oc;
+      try {
+        const oc = document.createElement('canvas');
+        oc.width = (img.naturalWidth || img.width) * scale;
+        oc.height = (img.naturalHeight || img.height) * scale;
+        const octx = oc.getContext('2d');
+        octx.imageSmoothingEnabled = false;
+        octx.drawImage(img, 0, 0, oc.width, oc.height);
+        return oc;
+      } catch(e) {
+        return img;
+      }
     }
 
     Object.keys(ASSETS).forEach(k => {
@@ -898,18 +904,7 @@
       img.src = asset.src;
       img.onload = () => { 
         asset.img = img;
-        const upCanvas = createUpscaledCanvas(img, 4);
-        asset.upscaled = upCanvas;
-        
-        if (k.startsWith('face_')) {
-          const charKey = k.replace('face_', '');
-          asset.dataUrl = upCanvas.toDataURL('image/png');
-          
-          const modalImg = document.getElementById(`modalPickImg_${charKey}`);
-          if (modalImg) modalImg.src = asset.dataUrl;
-
-          updateCharMiniAvatars();
-        }
+        asset.upscaled = createUpscaledCanvas(img, 4);
       };
     });
 
@@ -924,16 +919,8 @@
     function updateCharMiniAvatars() {
       const pImg = document.getElementById('myAvatarMini');
       const aImg = document.getElementById('aiAvatarMini');
-
-      const pFaceAsset = ASSETS['face_' + curPlayerChar];
-      const aFaceAsset = ASSETS['face_' + curAiChar];
-
-      if (pImg) {
-        pImg.src = (pFaceAsset && pFaceAsset.dataUrl) ? pFaceAsset.dataUrl : (CHAR_FACES[curPlayerChar] || 'butter.png');
-      }
-      if (aImg) {
-        aImg.src = (aFaceAsset && aFaceAsset.dataUrl) ? aFaceAsset.dataUrl : (CHAR_FACES[curAiChar] || 'dwqdqdsswdasdas.png');
-      }
+      if (pImg) pImg.src = CHAR_FACES[curPlayerChar] || 'butter.png';
+      if (aImg) aImg.src = CHAR_FACES[curAiChar] || 'dwqdqdsswdasdas.png';
     }
 
     function selectInitialChar(charKey) {
@@ -949,6 +936,7 @@
 
     function confirmInitialSetup() {
       document.getElementById('initModal').style.display = 'none';
+      resumeGameFromModal();
       prepareServeState();
       startMatchIntro();
     }
@@ -973,6 +961,67 @@
         row.classList.add('locked');
       } else {
         row.classList.remove('locked');
+      }
+    }
+
+    let revengeRequestedByMe = false;
+    let revengeRequestedByOpponent = false;
+
+    function showRevengeModal(isWinner) {
+      const titleElem = document.getElementById('matchResultTitle');
+      titleElem.innerText = isWinner ? I18N[curLang].winFinal : I18N[curLang].loseFinal;
+      titleElem.style.color = isWinner ? '#16a34a' : '#dc2626';
+
+      document.getElementById('matchResultSub').innerText = I18N[curLang].revengeAsk;
+      document.getElementById('btnRevengeAction').innerText = I18N[curLang].revengeBtn;
+      document.getElementById('btnCancelAction').innerText = I18N[curLang].cancelBtn;
+      document.getElementById('revengeStatusTxt').innerText = '';
+      revengeRequestedByMe = false;
+      revengeRequestedByOpponent = false;
+
+      document.getElementById('revengeModal').style.display = 'flex';
+    }
+
+    function hideRevengeModal() {
+      document.getElementById('revengeModal').style.display = 'none';
+      document.getElementById('revengeStatusTxt').innerText = '';
+      revengeRequestedByMe = false;
+      revengeRequestedByOpponent = false;
+    }
+
+    function onRevengeClicked() {
+      if (netMode === 'OFFLINE') {
+        hideRevengeModal();
+        prepareServeState();
+        startMatchIntro();
+        return;
+      }
+
+      revengeRequestedByMe = true;
+
+      if (revengeRequestedByOpponent) {
+        hideRevengeModal();
+        if (conn && conn.open) {
+          conn.send({ type: 'REVENGE_START' });
+        }
+        prepareServeState();
+        startMatchIntro();
+      } else {
+        document.getElementById('btnRevengeAction').innerText = '⏳ 요청 중...';
+        document.getElementById('revengeStatusTxt').innerText = I18N[curLang].revengeWaiting;
+        document.getElementById('revengeStatusTxt').style.color = '#0284c7';
+        if (conn && conn.open) {
+          conn.send({ type: 'REVENGE_REQUEST' });
+        }
+      }
+    }
+
+    function onCancelMatchClicked() {
+      hideRevengeModal();
+      if (netMode !== 'OFFLINE') {
+        disconnectMulti(true);
+      } else {
+        prepareServeState();
       }
     }
 
@@ -1001,6 +1050,7 @@
           gameState = savedStateBeforePause;
           savedStateBeforePause = null;
         }
+        lastTime = performance.now();
         if (audioCtx && audioCtx.state === 'suspended') {
           audioCtx.resume();
         }
@@ -1028,18 +1078,1192 @@
     }
 
     // =============================================================
-    // 메인 루프 (일시정지 감지 포함)
+    // [양측 배너 충돌 + 5초 대기 인트로 연출 모듈]
     // =============================================================
+    let matchIntroTimer = 0;
+    const MATCH_INTRO_DURATION = 330;
+    const SLIDE_DURATION = 30;
+    let hasClashed = false;
+    let autoServeTimer = 180;
+
+    function startMatchIntro() {
+      gameState = 'MATCH_INTRO';
+      matchIntroTimer = MATCH_INTRO_DURATION;
+      hasClashed = false;
+      updateCharSelectLockState();
+    }
+
+    function drawMatchIntro(dt) {
+      matchIntroTimer -= dt;
+      if (matchIntroTimer <= 0) {
+        gameState = 'SERVE';
+        autoServeTimer = 180;
+        updateCharSelectLockState();
+        return;
+      }
+
+      const elapsed = MATCH_INTRO_DURATION - matchIntroTimer;
+      const slideProg = Math.min(1.0, elapsed / SLIDE_DURATION);
+
+      const c1 = 1.70158;
+      const c3 = c1 + 1;
+      const ease = (slideProg < 1.0)
+        ? 1 + c3 * Math.pow(slideProg - 1, 3) + c1 * Math.pow(slideProg - 1, 2)
+        : 1.0;
+
+      if (slideProg >= 1.0 && !hasClashed) {
+        hasClashed = true;
+        triggerScreenShake(35);
+        playRoundBellSound();
+      }
+
+      const leftOffset = (1.0 - ease) * (-viewW * 0.7);
+      const rightOffset = (1.0 - ease) * (viewW * 0.7);
+
+      ctx.fillStyle = '#9fd2fa';
+      ctx.fillRect(0, 0, viewW, viewH);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(80, 50, 24, 0, Math.PI * 2);
+      ctx.arc(110, 45, 32, 0, Math.PI * 2);
+      ctx.arc(140, 50, 24, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(viewW - 100, 70, 26, 0, Math.PI * 2);
+      ctx.arc(viewW - 70, 65, 34, 0, Math.PI * 2);
+      ctx.arc(viewW - 40, 70, 26, 0, Math.PI * 2);
+      ctx.fill();
+
+      const centerY = viewH / 2 - 10;
+      const cardH = 210;
+
+      const card1X = 15 + leftOffset;
+      ctx.save();
+      ctx.fillStyle = '#bbf7d0';
+      ctx.fillRect(card1X, centerY - cardH / 2, viewW / 2 - 20, cardH);
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(card1X, centerY - cardH / 2, viewW / 2 - 20, cardH);
+
+      ctx.fillStyle = '#86efac';
+      ctx.fillRect(card1X + 2, centerY - cardH / 2 + 2, viewW / 2 - 24, 28);
+      ctx.fillStyle = '#15803d';
+      ctx.font = `bold 13px ${I18N[curLang].fontFamily}`;
+      ctx.fillText('1P PLAYER', card1X + 12, centerY - cardH / 2 + 21);
+      ctx.restore();
+
+      const card2X = viewW / 2 + 5 + rightOffset;
+      ctx.save();
+      ctx.fillStyle = '#fed7aa';
+      ctx.fillRect(card2X, centerY - cardH / 2, viewW / 2 - 20, cardH);
+      ctx.strokeStyle = '#f97316';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(card2X, centerY - cardH / 2, viewW / 2 - 20, cardH);
+
+      ctx.fillStyle = '#fdba74';
+      ctx.fillRect(card2X + 2, centerY - cardH / 2 + 2, viewW / 2 - 24, 28);
+      ctx.fillStyle = '#c2410c';
+      ctx.font = `bold 13px ${I18N[curLang].fontFamily}`;
+      ctx.fillText((netMode !== 'OFFLINE' ? '2P PLAYER' : 'AI BOT'), card2X + 12, centerY - cardH / 2 + 21);
+      ctx.restore();
+
+      const introHop1 = Math.abs(Math.sin((MATCH_INTRO_DURATION - matchIntroTimer) * 0.18)) * 14;
+      const introHop2 = Math.abs(Math.sin((MATCH_INTRO_DURATION - matchIntroTimer) * 0.18 + Math.PI / 2)) * 14;
+
+      const leftCharKey = (netMode === 'CLIENT') ? curAiChar : curPlayerChar;
+      const rightCharKey = (netMode === 'CLIENT') ? curPlayerChar : curAiChar;
+
+      const leftAsset = ASSETS[leftCharKey];
+      const leftSource = leftAsset ? (leftAsset.upscaled || leftAsset.img) : null;
+      if (leftSource) {
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+        ctx.translate(95 + leftOffset, centerY - 25 - introHop1);
+        ctx.drawImage(leftSource, -42, -50, 84, 98);
+        ctx.restore();
+      }
+
+      const rightAsset = ASSETS[rightCharKey];
+      const rightSource = rightAsset ? (rightAsset.upscaled || rightAsset.img) : null;
+      if (rightSource) {
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+        ctx.translate(viewW - 105 + rightOffset, centerY - 25 - introHop2);
+        ctx.scale(-1, 1);
+        ctx.drawImage(rightSource, -42, -50, 84, 98);
+        ctx.restore();
+      }
+
+      const leftName = (netMode === 'CLIENT') ? opponentNickname : myNickname;
+      const rightName = (netMode === 'CLIENT') ? myNickname : opponentNickname;
+
+      ctx.save();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+      ctx.beginPath();
+      ctx.roundRect(24 + leftOffset, centerY + 36, viewW / 2 - 38, 48, 12);
+      ctx.fill();
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(46 + leftOffset, centerY + 60, 16, 0, Math.PI * 2);
+      ctx.fillStyle = THEMES[leftCharKey].light;
+      ctx.fill();
+      ctx.clip();
+      
+      const leftFaceAsset = ASSETS['face_' + leftCharKey];
+      const leftFaceSource = leftFaceAsset ? (leftFaceAsset.upscaled || leftFaceAsset.img) : null;
+      if (leftFaceSource) {
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(leftFaceSource, 46 + leftOffset - 17, centerY + 60 - 17, 34, 34);
+      }
+      ctx.restore();
+
+      ctx.beginPath();
+      ctx.arc(46 + leftOffset, centerY + 60, 16, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      ctx.fillStyle = '#0f172a';
+      ctx.font = `14px ${I18N[curLang].fontFamily}`;
+      ctx.textAlign = 'left';
+      ctx.fillText(leftName, 70 + leftOffset, centerY + 65);
+
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.roundRect(28 + leftOffset, centerY + 87, 76, 18, 8);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold 10px ${I18N[curLang].fontFamily}`;
+      ctx.textAlign = 'center';
+      ctx.fillText(I18N[curLang].startPlayerBadge, 66 + leftOffset, centerY + 100);
+      ctx.restore();
+
+      ctx.save();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+      ctx.beginPath();
+      ctx.roundRect(viewW / 2 + 14 + rightOffset, centerY + 36, viewW / 2 - 38, 48, 12);
+      ctx.fill();
+      ctx.strokeStyle = '#f97316';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(viewW / 2 + 36 + rightOffset, centerY + 60, 16, 0, Math.PI * 2);
+      ctx.fillStyle = THEMES[rightCharKey].light;
+      ctx.fill();
+      ctx.clip();
+      
+      const rightFaceAsset = ASSETS['face_' + rightCharKey];
+      const rightFaceSource = rightFaceAsset ? (rightFaceAsset.upscaled || rightFaceAsset.img) : null;
+      if (rightFaceSource) {
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(rightFaceSource, viewW / 2 + 36 + rightOffset - 17, centerY + 60 - 17, 34, 34);
+      }
+      ctx.restore();
+
+      ctx.beginPath();
+      ctx.arc(viewW / 2 + 36 + rightOffset, centerY + 60, 16, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      ctx.fillStyle = '#0f172a';
+      ctx.font = `14px ${I18N[curLang].fontFamily}`;
+      ctx.textAlign = 'left';
+      const dispOppName = (netMode !== 'OFFLINE') ? opponentNickname : I18N[curLang].lblAiName;
+      ctx.fillText(dispOppName, viewW / 2 + 58 + rightOffset, centerY + 65);
+      ctx.restore();
+
+      if (hasClashed) {
+        ctx.save();
+        ctx.translate(viewW / 2, centerY - 28);
+        const vsPop = Math.min(1.0, (elapsed - SLIDE_DURATION) / 10);
+        const vsPulse = vsPop * (1.0 + Math.sin((MATCH_INTRO_DURATION - matchIntroTimer) * 0.25) * 0.08);
+        ctx.scale(vsPulse, vsPulse);
+
+        ctx.fillStyle = '#f43f5e';
+        ctx.beginPath();
+        const points = 16;
+        for (let p = 0; p < points * 2; p++) {
+          const r = (p % 2 === 0) ? 46 : 28;
+          const angle = (p * Math.PI) / points;
+          const vx = Math.cos(angle) * r;
+          const vy = Math.sin(angle) * r;
+          if (p === 0) ctx.moveTo(vx, vy);
+          else ctx.lineTo(vx, vy);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3.5;
+        ctx.stroke();
+
+        ctx.font = `900 28px ${I18N[curLang].fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#7c2d12';
+        ctx.fillText('VS', 2, 11);
+        ctx.fillStyle = '#fef08a';
+        ctx.fillText('VS', 0, 9);
+        ctx.restore();
+
+        const remainingSec = Math.max(1, Math.ceil(matchIntroTimer / 60));
+        ctx.save();
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
+        ctx.beginPath();
+        ctx.roundRect(viewW / 2 - 105, viewH - 65, 210, 36, 18);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold 14px ${I18N[curLang].fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(I18N[curLang].introCountdown.replace('{sec}', remainingSec), viewW / 2, viewH - 42);
+        ctx.restore();
+      }
+    }
+
+    // =============================================================
+    // P2P 멀티플레이 통신 엔진
+    // =============================================================
+    let peer = null;
+    let conn = null;
+    let netMode = 'OFFLINE';
+    let guestMouseX = viewW / 2;
+    let disconnectTimeout = null;
+
+    function generateRoomCode() {
+      return 'TRICK-' + Math.floor(1000 + Math.random() * 9000);
+    }
+
+    function initPeer(callback) {
+      if (peer && !peer.destroyed) { callback(); return; }
+      peer = new Peer(generateRoomCode(), {
+        debug: 1,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+          ]
+        }
+      });
+      peer.on('open', () => { callback(); });
+      peer.on('error', (err) => {
+        document.getElementById('multiStatusTxt').innerText = 'Network error: ' + err.type;
+      });
+    }
+
+    function createRoom() {
+      document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiConnecting;
+      initPeer(() => {
+        netMode = 'HOST';
+        updateOpponentNameUI();
+        document.getElementById('roomCodeDisplay').style.display = 'block';
+        document.getElementById('myRoomId').innerText = peer.id;
+        document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiWaiting;
+
+        peer.on('connection', (c) => {
+          conn = c;
+          setupConnHandlers();
+          document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiGuestConnected;
+          setTimeout(() => {
+            closeMultiModal();
+            prepareServeState();
+            startMatchIntro();
+            if (conn && conn.open) conn.send({ type: 'START_INTRO', hostChar: curPlayerChar, hostNick: myNickname });
+          }, 600);
+        });
+      });
+    }
+
+    function joinRoom() {
+      const code = document.getElementById('joinRoomInput').value.trim();
+      if (!code) { 
+        alert(curLang === 'ko' ? '방 코드를 입력해주세요!' : (curLang === 'ja' ? '코드を入力してください！' : 'Please enter room code!')); 
+        return; 
+      }
+      document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiConnectingHost;
+      initPeer(() => {
+        netMode = 'CLIENT';
+        updateOpponentNameUI();
+        conn = peer.connect(code, { reliable: true });
+        setupConnHandlers();
+      });
+    }
+
+    function setupConnHandlers() {
+      conn.on('open', () => {
+        if (disconnectTimeout) {
+          clearTimeout(disconnectTimeout);
+          disconnectTimeout = null;
+        }
+        document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiConnected;
+        conn.send({ type: 'NICKNAME', name: myNickname });
+        conn.send({ type: 'CHAR', char: curPlayerChar });
+      });
+
+      conn.on('data', (data) => {
+        if (data.type === 'NICKNAME') {
+          opponentNickname = data.name || '상대';
+          updateOpponentNameUI();
+          return;
+        }
+
+        if (data.type === 'CHAR') {
+          curAiChar = data.char;
+          document.getElementById('aiCharSelect').value = curAiChar;
+          updateCharMiniAvatars();
+          return;
+        }
+
+        if (data.type === 'START_INTRO') {
+          if (data.hostChar) curAiChar = data.hostChar;
+          if (data.hostNick) opponentNickname = data.hostNick;
+          updateOpponentNameUI();
+          updateCharMiniAvatars();
+          closeMultiModal();
+          hideRevengeModal();
+          prepareServeState();
+          startMatchIntro();
+          return;
+        }
+
+        if (data.type === 'REVENGE_REQUEST') {
+          revengeRequestedByOpponent = true;
+          document.getElementById('revengeStatusTxt').innerText = I18N[curLang].revengeOpponentRequested;
+          document.getElementById('revengeStatusTxt').style.color = '#16a34a';
+          document.getElementById('btnRevengeAction').innerText = I18N[curLang].revengeAcceptBtn;
+          return;
+        }
+
+        if (data.type === 'REVENGE_START') {
+          hideRevengeModal();
+          prepareServeState();
+          startMatchIntro();
+          return;
+        }
+
+        if (netMode === 'CLIENT') {
+          handleHostSyncPacket(data);
+        } else if (netMode === 'HOST') {
+          if (data.type === 'INPUT') {
+            guestMouseX = data.mouseX;
+          } else if (data.type === 'SERVE_TRIGGER') {
+            triggerServeFromClient();
+          }
+        }
+      });
+
+      conn.on('close', () => {
+        if (document.hidden) {
+          disconnectTimeout = setTimeout(() => {
+            handlePeerDisconnected();
+          }, 20000);
+        } else {
+          handlePeerDisconnected();
+        }
+      });
+    }
+
+    function handlePeerDisconnected() {
+      const msg = I18N[curLang].multiClosed;
+      hideRevengeModal();
+      disconnectMulti(false);
+      alert(msg);
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        if (audioCtx && audioCtx.state === 'running') {
+          audioCtx.suspend();
+        }
+      } else {
+        if (disconnectTimeout) {
+          clearTimeout(disconnectTimeout);
+          disconnectTimeout = null;
+        }
+        if (!isGamePaused && audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+      }
+    });
+
+    window.addEventListener('beforeunload', () => {
+      if (conn && conn.open) {
+        conn.close();
+      }
+    });
+
+    function disconnectMulti(manual = false) {
+      if (disconnectTimeout) {
+        clearTimeout(disconnectTimeout);
+        disconnectTimeout = null;
+      }
+      if (conn) conn.close();
+      if (peer) peer.destroy();
+      peer = null;
+      conn = null;
+      netMode = 'OFFLINE';
+      opponentNickname = 'AI';
+      updateOpponentNameUI();
+      updateCharMiniAvatars();
+      document.getElementById('roomCodeDisplay').style.display = 'none';
+      document.getElementById('multiStatusTxt').innerText = '';
+      if (manual) closeMultiModal();
+      hideRevengeModal();
+      prepareServeState();
+    }
+
+    function handleHostSyncPacket(pkt) {
+      playerScore = pkt.guestScore;
+      aiScore = pkt.hostScore;
+      updateScoreUI();
+
+      ai.w = pkt.hostPaddleW;
+      ai.x = viewW - pkt.hostPaddleX - ai.w;
+      ai.y = 52;
+      if (pkt.hostChar && curAiChar !== pkt.hostChar) {
+        curAiChar = pkt.hostChar;
+        updateCharMiniAvatars();
+      }
+
+      if (pkt.guestPaddleW) {
+        player.w = pkt.guestPaddleW;
+      }
+
+      balls = (pkt.balls || []).map(b => {
+        const nb = new Ball(viewW - b.x, viewH - b.y, -b.vx, -b.vy);
+        nb.r = b.r || 13;
+        return nb;
+      });
+
+      fieldItems = (pkt.items || []).map(it => {
+        const ni = new FieldItem(it.type);
+        ni.x = viewW - it.x;
+        ni.y = viewH - it.y;
+        return ni;
+      });
+
+      slimeBumpers = (pkt.bumpers || []).map(sb => {
+        const nb = new SlimeBumper(viewW - sb.x, viewH - sb.y);
+        nb.r = sb.r || 24;
+        return nb;
+      });
+
+      if (pkt.drone) {
+        if (!activeDrone) activeDrone = new CrossingDrone();
+        activeDrone.x = viewW - pkt.drone.x;
+        activeDrone.y = viewH - pkt.drone.y;
+        activeDrone.dir = -pkt.drone.dir;
+      } else {
+        activeDrone = null;
+      }
+
+      if (pkt.gameState === 'MATCH_INTRO' && gameState !== 'MATCH_INTRO') {
+        startMatchIntro();
+      } else if (pkt.gameState !== 'MATCH_INTRO') {
+        gameState = pkt.gameState;
+      }
+
+      if (pkt.gameState === 'MATCH_OVER' && gameState !== 'MATCH_OVER') {
+        matchWinner = pkt.matchWinner === 'player' ? 'ai' : (pkt.matchWinner === 'ai' ? 'player' : null);
+        showRevengeModal(matchWinner === 'player');
+      }
+
+      matchWinner = pkt.matchWinner === 'player' ? 'ai' : (pkt.matchWinner === 'ai' ? 'player' : null);
+      updateCharSelectLockState();
+
+      if (pkt.sfx) playSound(pkt.sfx);
+      if (pkt.shake) triggerScreenShake(pkt.shake);
+    }
+
+    let sfxVolume = 0.7;
+    let bgmVolume = 0.5;
+    let bgmLoopMode = false;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const sfxMasterGain = audioCtx.createGain();
+    sfxMasterGain.gain.setValueAtTime(sfxVolume, audioCtx.currentTime);
+    sfxMasterGain.connect(audioCtx.destination);
+
+    const bgmMasterGain = audioCtx.createGain();
+    bgmMasterGain.gain.setValueAtTime(bgmVolume, audioCtx.currentTime);
+    bgmMasterGain.connect(audioCtx.destination);
+
+    function ensureAudioUnlocked() {
+      if (audioCtx.state === 'suspended' && !isGamePaused) {
+        audioCtx.resume();
+      }
+    }
+    ['pointerdown', 'keydown', 'pointermove', 'touchstart'].forEach(evt => {
+      window.addEventListener(evt, ensureAudioUnlocked, { once: true, passive: true });
+    });
+
+    let currentBgmNode = null;
+    let prebakedBgmBuffer = null;
+
+    const melody1Min = [
+      523, 659, 784, 1046,  880, 784, 659, 784,   880, 0, 880, 1046,  784, 0, 0, 0,
+      523, 659, 784, 1046,  1174, 1046, 880, 784, 880, 1046, 1174, 1318, 1046, 0, 0, 0,
+      659, 784, 880, 1046,  988, 880, 784, 659,   587, 659, 698, 784,   659, 0, 523, 0,
+      523, 587, 659, 784,   880, 1046, 988, 784,  659, 784, 587, 493,   523, 0, 0, 0,
+
+      880, 880, 1046, 880,  784, 659, 587, 523,   659, 659, 784, 659,   587, 0, 392, 0,
+      880, 880, 1046, 1174, 1318, 1174, 1046, 880, 1046, 1174, 1046, 784, 880, 0, 0, 0,
+      1046, 988, 880, 784,  880, 784, 659, 587,   659, 587, 523, 440,   523, 0, 392, 0,
+      523, 659, 784, 880,   1046, 880, 784, 659,  587, 659, 587, 392,   523, 0, 0, 0,
+
+      1046, 1318, 1174, 1046, 880, 1046, 784, 880, 659, 784, 880, 1046, 1174, 0, 0, 0,
+      1318, 1568, 1318, 1174, 1046, 1174, 880, 784, 880, 1046, 1174, 1318, 1568, 0, 0, 0,
+      1568, 1318, 1174, 1046, 1174, 1046, 880, 784, 880, 784, 659, 587, 659, 0, 523, 0,
+      523, 659, 784, 880,   1046, 1174, 1318, 1568, 1318, 1046, 784, 587, 523, 0, 0, 0,
+
+      659, 0, 587, 0,   523, 0, 392, 0,   440, 0, 523, 0,   587, 0, 0, 0,
+      659, 0, 587, 0,   523, 0, 659, 0,   784, 0, 880, 0,   1046, 0, 0, 0,
+      880, 784, 659, 587, 523, 392, 329, 261, 293, 349, 392, 440, 523, 0, 392, 0,
+      523, 523, 659, 659, 784, 784, 1046, 0, 784, 659, 587, 493, 523, 0, 0, 0
+    ];
+
+    const bass1Min = [
+      130, 261, 130, 196, 174, 349, 174, 261, 196, 392, 196, 293, 146, 293, 146, 220,
+      130, 261, 130, 196, 174, 349, 174, 261, 196, 392, 196, 293, 130, 0,   130, 0
+    ];
+
+    function render1MinBgmAudioBuffer() {
+      if (prebakedBgmBuffer) return prebakedBgmBuffer;
+      const sr = 22050;
+      const stepDur = 0.165;
+      const totalSteps = melody1Min.length;
+      const totalSamples = Math.floor(totalSteps * stepDur * sr);
+      const buffer = audioCtx.createBuffer(1, totalSamples, sr);
+      const d = buffer.getChannelData(0);
+
+      for (let s = 0; s < totalSteps; s++) {
+        const startIdx = Math.floor(s * stepDur * sr);
+        const endIdx = Math.floor((s + 1) * stepDur * sr);
+        const melFreq = melody1Min[s];
+        const bassFreq = (s % 2 === 0) ? (bass1Min[Math.floor(s / 2) % bass1Min.length] / 2) : 0;
+
+        for (let i = startIdx; i < endIdx && i < totalSamples; i++) {
+          const t = (i - startIdx) / sr;
+          let val = 0;
+
+          if (melFreq > 0) {
+            const env = Math.exp(-t * 9.0);
+            val += Math.sin(2 * Math.PI * melFreq * t) * 0.35 * env;
+            val += Math.sin(4 * Math.PI * melFreq * t) * 0.1 * env;
+          }
+
+          if (bassFreq > 0) {
+            const bEnv = Math.exp(-t * 7.0);
+            val += Math.sin(2 * Math.PI * bassFreq * t) * 0.45 * bEnv;
+          }
+
+          if (s % 4 === 0) {
+            const kEnv = Math.exp(-t * 28.0);
+            const kPitch = 40 + 110 * Math.exp(-t * 40.0);
+            val += Math.sin(2 * Math.PI * kPitch * t) * 0.35 * kEnv;
+          }
+
+          if (s % 4 === 2) {
+            const sEnv = Math.exp(-t * 32.0);
+            val += ((Math.sin(2 * Math.PI * 180 * t) > 0 ? 0.2 : -0.2) * sEnv);
+          }
+
+          d[i] = Math.max(-0.95, Math.min(0.95, val * 0.7));
+        }
+      }
+
+      prebakedBgmBuffer = buffer;
+      return buffer;
+    }
+
+    function stopBgm() {
+      if (currentBgmNode) {
+        try { currentBgmNode.stop(); } catch(e){}
+        currentBgmNode.disconnect();
+        currentBgmNode = null;
+      }
+    }
+
+    function startCleanChiptuneBgm() {
+      stopBgm();
+      ensureAudioUnlocked();
+      if (bgmVolume <= 0.01) return;
+
+      const buffer = render1MinBgmAudioBuffer();
+      const node = audioCtx.createBufferSource();
+      node.buffer = buffer;
+      node.loop = bgmLoopMode;
+      node.connect(bgmMasterGain);
+      node.start(0);
+      currentBgmNode = node;
+
+      node.onended = () => {
+        if (currentBgmNode === node) currentBgmNode = null;
+      };
+    }
+
+    function setBgmLoopMode(isLoop) {
+      bgmLoopMode = isLoop;
+      if (currentBgmNode) currentBgmNode.loop = bgmLoopMode;
+      document.getElementById('btnBgmOnce').classList.toggle('active', !bgmLoopMode);
+      document.getElementById('btnBgmLoop').classList.toggle('active', bgmLoopMode);
+    }
+
+    function playRoundBellSound() {
+      if (sfxVolume <= 0.01) return;
+      ensureAudioUnlocked();
+
+      try {
+        const now = audioCtx.currentTime;
+        const bellFreqs = [880, 1760, 2640];
+        bellFreqs.forEach((freq, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = (idx === 0) ? 'sine' : 'triangle';
+          osc.frequency.setValueAtTime(freq, now);
+
+          const vol = (idx === 0 ? 0.65 : (0.28 / idx)) * Math.max(sfxVolume, 0.5);
+          gain.gain.setValueAtTime(vol, now);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.2);
+
+          osc.connect(gain);
+          gain.connect(sfxMasterGain);
+          osc.start(now);
+          osc.stop(now + 2.2);
+        });
+      } catch (err) {
+        console.warn('AudioContext playback error:', err);
+      }
+    }
+
+    function playSynthFallback(type) {
+      if (sfxVolume <= 0.01) return;
+      ensureAudioUnlocked();
+
+      if (type === 'round_bell') {
+        playRoundBellSound();
+        return;
+      }
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(sfxMasterGain);
+      const now = audioCtx.currentTime;
+
+      if (type === 'wall') {
+        osc.frequency.setValueAtTime(240, now);
+        osc.frequency.exponentialRampToValueAtTime(140, now + 0.08);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+        osc.start(now); osc.stop(now + 0.08);
+      } else if (type === 'hit') {
+        osc.frequency.setValueAtTime(420, now);
+        osc.frequency.exponentialRampToValueAtTime(260, now + 0.1);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+        osc.start(now); osc.stop(now + 0.1);
+      } else if (type === 'eat') {
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.linearRampToValueAtTime(840, now + 0.15);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+        osc.start(now); osc.stop(now + 0.15);
+      } else if (type === 'bounce') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(640, now + 0.12);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+        osc.start(now); osc.stop(now + 0.12);
+      } else if (type === 'drone') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.linearRampToValueAtTime(280, now + 0.25);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+        osc.start(now); osc.stop(now + 0.25);
+      } else if (type === 'game_over') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(90, now + 0.6);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.6);
+        osc.start(now); osc.stop(now + 0.6);
+      }
+    }
+
+    const SOUNDS = {
+      wall: new Audio('wall.wav'),
+      hit: new Audio('hit.wav'),
+      eat: new Audio('eat.wav'),
+      game_over: new Audio('game_over.wav')
+    };
+
+    ['wall', 'hit', 'eat', 'game_over'].forEach(key => {
+      SOUNDS[key].addEventListener('error', () => {
+        SOUNDS[key] = new Audio(`${key}.mp3`);
+        SOUNDS[key].addEventListener('error', () => { SOUNDS[key] = null; });
+      });
+    });
+
+    function playSound(type) {
+      if (sfxVolume <= 0.01) return;
+      if (type === 'round_bell') {
+        playRoundBellSound();
+        return;
+      }
+      const snd = SOUNDS[type];
+      if (snd && snd.play) {
+        snd.volume = sfxVolume;
+        snd.currentTime = 0;
+        snd.play().catch(() => playSynthFallback(type));
+      } else {
+        playSynthFallback(type);
+      }
+    }
+
+    function setBgmVolume(val) {
+      bgmVolume = parseFloat(val);
+      bgmMasterGain.gain.setValueAtTime(bgmVolume, audioCtx.currentTime);
+      document.getElementById('valBgm').innerText = `${Math.round(bgmVolume * 100)}%`;
+      if (bgmVolume > 0 && !currentBgmNode) {
+        startCleanChiptuneBgm();
+      } else if (bgmVolume <= 0.01) {
+        stopBgm();
+      }
+    }
+
+    function setSfxVolume(val) {
+      sfxVolume = parseFloat(val);
+      sfxMasterGain.gain.setValueAtTime(sfxVolume, audioCtx.currentTime);
+      document.getElementById('valSfx').innerText = `${Math.round(sfxVolume * 100)}%`;
+    }
+
+    let shakeTimer = 0;
+    function triggerScreenShake(durationFrames = 90) {
+      shakeTimer = durationFrames;
+    }
+
+    let playerScore = 0;
+    let aiScore = 0;
+    let gameState = 'SERVE';
+    let matchWinner = null;
+
+    const PADDLE_SIZES = [86, 116, 146];
+
+    const player = {
+      x: viewW / 2 - 43,
+      y: viewH - 42,
+      lastX: viewW / 2 - 43,
+      level: 0,
+      w: PADDLE_SIZES[0],
+      h: 20,
+      charW: 54,
+      charH: 62,
+      bounceTimer: 0
+    };
+
+    const ai = {
+      x: viewW / 2 - 43,
+      y: 52,
+      lastX: viewW / 2 - 43,
+      level: 0,
+      w: PADDLE_SIZES[0],
+      h: 20,
+      speed: DIFF_CONFIG.normal.aiSpeed,
+      charW: 54,
+      charH: 62,
+      bounceTimer: Math.PI / 2
+    };
+
+    function setPaddleLevel(target, lvl) {
+      target.level = Math.max(0, Math.min(2, lvl));
+      const oldW = target.w;
+      target.w = PADDLE_SIZES[target.level];
+      target.x -= (target.w - oldW) / 2;
+      if (target.x < 15) target.x = 15;
+      if (target.x + target.w > viewW - 15) target.x = viewW - 15 - target.w;
+    }
+
+    let balls = [];
+
+    class Ball {
+      constructor(x, y, vx, vy) {
+        this.x = x;
+        this.y = y;
+        this.r = 13;
+        this.vx = vx;
+        this.vy = vy;
+        this.lastHitter = 'player';
+      }
+
+      update(dt) {
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+
+        if (this.x - this.r <= 19) {
+          this.x = 19 + this.r;
+          this.vx = -this.vx;
+          playSound('wall');
+          if (netMode === 'HOST' && conn) conn.send({ type: 'EVENT', sfx: 'wall' });
+        }
+        if (this.x + this.r >= viewW - 19) {
+          this.x = viewW - 19 - this.r;
+          this.vx = -this.vx;
+          playSound('wall');
+          if (netMode === 'HOST' && conn) conn.send({ type: 'EVENT', sfx: 'wall' });
+        }
+      }
+
+      draw() {
+        ctx.save();
+        ctx.translate(Math.floor(this.x), Math.floor(this.y));
+        const bAsset = ASSETS.ballItem;
+        const source = bAsset.upscaled || bAsset.img;
+        if (source) {
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(source, -this.r, -this.r, this.r * 2, this.r * 2);
+        } else {
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.arc(0, 0, this.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#b91c1c';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
+
+    function resetBalls(server = 'player') {
+      balls = [];
+      const baseSpeed = DIFF_CONFIG[curDifficulty].baseBallSpeed;
+      const vy = (server === 'player') ? -baseSpeed : baseSpeed;
+      balls.push(new Ball(viewW / 2, viewH / 2, (Math.random() - 0.5) * 3, vy));
+    }
+
+    let slimeBumpers = [];
+    class SlimeBumper {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.r = 24;
+        this.life = 750;
+        this.scaleTimer = Math.random() * Math.PI;
+      }
+      update(dt) { this.life -= dt; this.scaleTimer += 0.1 * dt; }
+      draw() {
+        ctx.save();
+        const pulse = Math.sin(this.scaleTimer) * 2;
+        const w = (this.r + pulse) * 2;
+        const h = (this.r + pulse) * 2;
+        ctx.translate(Math.floor(this.x), Math.floor(this.y));
+
+        const sAsset = ASSETS.slime;
+        const source = sAsset.upscaled || sAsset.img;
+        if (source) {
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(source, -w / 2, -h / 2, w, h);
+        } else {
+          ctx.fillStyle = '#22c55e';
+          ctx.beginPath();
+          ctx.arc(0, 0, this.r + pulse, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
+    let activeDrone = null;
+    let droneCooldown = 0;
+    class CrossingDrone {
+      constructor() {
+        this.dir = Math.random() < 0.5 ? 1 : -1;
+        this.w = 52; this.h = 52;
+        this.x = this.dir > 0 ? -60 : viewW + 60;
+        this.baseY = viewH / 2 + (Math.random() - 0.5) * 40;
+        this.y = this.baseY;
+        this.speed = 8.5;
+        this.timer = 0;
+      }
+      update(dt) {
+        this.timer += dt * 0.1;
+        this.x += this.dir * this.speed * dt;
+        this.y = this.baseY + Math.sin(this.timer) * 12;
+      }
+      draw() {
+        ctx.save();
+        ctx.translate(Math.floor(this.x), Math.floor(this.y));
+        if (this.dir < 0) ctx.scale(-1, 1);
+        const dAsset = ASSETS.drone;
+        const source = dAsset.upscaled || dAsset.img;
+        if (source) {
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(source, -this.w / 2, -this.h / 2, this.w, this.h);
+        }
+        ctx.restore();
+      }
+    }
+
+    let fieldItems = [];
+    let itemSpawnTimer = 0;
+    class FieldItem {
+      constructor(type) {
+        this.type = type;
+        this.w = 34; this.h = 34;
+        this.x = Math.floor(Math.random() * (viewW - 140)) + 70;
+        this.y = Math.floor(Math.random() * (viewH / 2)) + (viewH / 4);
+        this.life = 700;
+        this.animTimer = 0;
+      }
+      update(dt) { this.life -= dt; this.animTimer += dt; }
+      draw() {
+        ctx.save();
+        const floatY = Math.sin(this.animTimer * 0.08) * 3;
+        ctx.translate(Math.floor(this.x), Math.floor(this.y + floatY));
+        const asset = ASSETS['item_' + this.type];
+        const source = asset.upscaled || asset.img;
+        if (source) {
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(source, -this.w / 2, -this.h / 2, this.w, this.h);
+        }
+        ctx.restore();
+      }
+    }
+
+    let popups = [];
+    class PopupText {
+      constructor(x, y, text, color) {
+        this.x = x; this.y = y; this.text = text; this.color = color;
+        this.life = 45;
+      }
+      update(dt) { this.y -= 1.0 * dt; this.life -= dt; }
+      draw() {
+        ctx.fillStyle = this.color;
+        ctx.font = `15px ${I18N[curLang].fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(this.text, this.x, this.y);
+      }
+    }
+
+    function updateAI(dt) {
+      if (balls.length === 0) return;
+      let targetBall = balls[0];
+      let minY = 9999;
+      for (let b of balls) {
+        if (b.vy < 0 && b.y < minY) {
+          minY = b.y;
+          targetBall = b;
+        }
+      }
+
+      const targetX = targetBall.x - ai.w / 2;
+      const diff = targetX - ai.x;
+      if (targetBall.vy < 0) {
+        if (Math.abs(diff) > 4) {
+          ai.x += Math.sign(diff) * Math.min(ai.speed, Math.abs(diff)) * dt;
+        }
+      } else {
+        const centerDiff = (viewW / 2 - ai.w / 2) - ai.x;
+        if (Math.abs(centerDiff) > 6) {
+          ai.x += Math.sign(centerDiff) * 2.0 * dt;
+        }
+      }
+
+      if (ai.x < 15) ai.x = 15;
+      if (ai.x + ai.w > viewW - 15) ai.x = viewW - 15 - ai.w;
+    }
+
+    function handlePointerCoord(clientX) {
+      if (isGamePaused) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = viewW / rect.width;
+      const mouseX = (clientX - rect.left) * scaleX;
+      
+      player.x = mouseX - player.w / 2;
+      if (player.x < 15) player.x = 15;
+      if (player.x + player.w > viewW - 15) player.x = viewW - 15 - player.w;
+
+      if (netMode === 'CLIENT' && conn && conn.open) {
+        conn.send({ type: 'INPUT', mouseX: viewW - mouseX });
+      }
+    }
+
+    canvas.addEventListener('pointermove', (e) => {
+      handlePointerCoord(e.clientX);
+    });
+
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (e.touches && e.touches.length > 0) {
+        handlePointerCoord(e.touches[0].clientX);
+      }
+    }, { passive: false });
+
+    canvas.addEventListener('touchstart', (e) => {
+      ensureAudioUnlocked();
+      if (e.touches && e.touches.length > 0) {
+        handlePointerCoord(e.touches[0].clientX);
+      }
+    }, { passive: false });
+
+    canvas.addEventListener('pointerdown', () => {
+      ensureAudioUnlocked();
+      if (!currentBgmNode && bgmVolume > 0 && gameState !== 'MATCH_INTRO' && gameState !== 'MATCH_OVER' && !isGamePaused) {
+        startCleanChiptuneBgm();
+      }
+    });
+
+    function triggerServeFromClient() {
+      handleServeOrReset();
+    }
+
+    function prepareServeState() {
+      stopBgm();
+      gameState = 'SERVE';
+      autoServeTimer = 180;
+      playerScore = 0;
+      aiScore = 0;
+      matchWinner = null;
+      setPaddleLevel(player, 0);
+      setPaddleLevel(ai, 0);
+      slimeBumpers = [];
+      fieldItems = [];
+      balls = [];
+      activeDrone = null;
+      updateScoreUI();
+      updateOpponentNameUI();
+      updateCharMiniAvatars();
+      updateCharSelectLockState();
+    }
+
+    function handleServeOrReset() {
+      if (gameState === 'SERVE' || gameState === 'ROUND_OVER') {
+        gameState = 'PLAYING';
+        updateCharSelectLockState();
+        if (bgmVolume > 0 && !currentBgmNode) {
+          startCleanChiptuneBgm();
+        }
+        resetBalls('player');
+      }
+    }
+
+    function updateScoreUI() {
+      document.getElementById('pScoreTxt').innerText = playerScore;
+      document.getElementById('aiScoreTxt').innerText = aiScore;
+    }
+
+    function changePlayerChar(val) {
+      if (gameState === 'PLAYING' || gameState === 'ROUND_OVER' || gameState === 'MATCH_INTRO' || gameState === 'MATCH_OVER') return;
+      curPlayerChar = val;
+      applyTheme(curPlayerChar);
+      updateCharMiniAvatars();
+      if (conn && conn.open) {
+        conn.send({ type: 'CHAR', char: curPlayerChar });
+      }
+    }
+
+    function changeAiChar(val) {
+      if (gameState === 'PLAYING' || gameState === 'ROUND_OVER' || gameState === 'MATCH_INTRO' || gameState === 'MATCH_OVER') return;
+      curAiChar = val;
+      updateCharMiniAvatars();
+    }
+
+    function setDifficulty(diff) {
+      curDifficulty = diff;
+      ai.speed = DIFF_CONFIG[curDifficulty].aiSpeed;
+      ['Easy', 'Normal', 'Hard'].forEach(d => {
+        document.getElementById('btnDiff' + d).classList.toggle('active', curDifficulty.toLowerCase() === d.toLowerCase());
+      });
+      popups.push(new PopupText(viewW / 2, viewH / 2 - 20, `${I18N[curLang].diffSetPrefix}${I18N[curLang].diffNames[diff]}`, THEMES[curPlayerChar].dark));
+    }
+
+    function setLanguage(lang) {
+      curLang = lang;
+      const dict = I18N[curLang];
+
+      document.documentElement.style.setProperty('--app-font', dict.fontFamily);
+      document.getElementById('titleTxt').innerText = dict.title;
+      document.getElementById('modalHeader').innerText = dict.settings;
+      document.getElementById('initModalTitle').innerText = dict.initTitle;
+      document.getElementById('lblInitLang').innerText = dict.initLang;
+      document.getElementById('lblInitChar').innerText = dict.initChar;
+      document.getElementById('btnConfirmStart').innerText = dict.initStartBtn;
+
+      document.getElementById('lblNicknameTitle').innerText = dict.nicknameTitle;
+      document.getElementById('btnSaveNickname').innerText = dict.saveNickBtn;
+      document.getElementById('lblBgm').innerText = dict.bgm;
+      document.getElementById('lblBgmLoop').innerText = dict.bgmLoopLabel;
+      document.getElementById('btnBgmOnce').innerText = dict.bgmOnce;
+      document.getElementById('btnBgmLoop').innerText = dict.bgmRepeat;
+      document.getElementById('lblSfx').innerText = dict.sfx;
+      document.getElementById('lblDifficulty').innerText = dict.difficulty;
+      document.getElementById('lblLang').innerText = dict.language;
+
+      document.getElementById('btnDiffEasy').innerText = dict.diffNames.easy;
+      document.getElementById('btnDiffNormal').innerText = dict.diffNames.normal;
+      document.getElementById('btnDiffHard').innerText = dict.diffNames.hard;
+
+      document.getElementById('guideYellow').innerText = dict.guideYellow;
+      document.getElementById('guideGreen').innerText = dict.guideGreen;
+      document.getElementById('guidePurple').innerText = dict.guidePurple;
+      document.getElementById('guideMacaron').innerText = dict.guideMacaron;
+      document.getElementById('bottomControlGuide').innerText = dict.controlGuide;
+
+      document.getElementById('lblPlayer').innerText = dict.lblPlayerSelect;
+      document.getElementById('lblAi').innerText = dict.lblAiSelect;
+
+      document.getElementById('multiModalTitle').innerText = dict.multiTitle;
+      document.getElementById('multiDescTxt').innerText = dict.multiDesc;
+      document.getElementById('multiHostTitle').innerText = dict.multiHost;
+      document.getElementById('btnCreateRoom').innerText = dict.multiCreateBtn;
+      document.getElementById('lblMyRoomCode').innerText = dict.multiMyCode;
+      document.getElementById('lblTellFriend').innerText = dict.multiTellFriend;
+      document.getElementById('multiGuestTitle').innerText = dict.multiGuest;
+      document.getElementById('joinRoomInput').placeholder = dict.multiInputPlaceholder;
+      document.getElementById('btnJoinRoom').innerText = dict.multiJoinBtn;
+      document.getElementById('btnBackToAi').innerText = dict.multiBackAi;
+
+      document.getElementById('btnRevengeAction').innerText = dict.revengeBtn;
+      document.getElementById('btnCancelAction').innerText = dict.cancelBtn;
+      document.getElementById('matchResultSub').innerText = dict.revengeAsk;
+
+      updateOpponentNameUI();
+
+      const pSelect = document.getElementById('playerCharSelect');
+      const aSelect = document.getElementById('aiCharSelect');
+      for (let opt of pSelect.options) opt.text = dict.chars[opt.value];
+      for (let opt of aSelect.options) opt.text = dict.chars[opt.value];
+
+      ['butter', 'rim', 'ner', 'aya', 'daya'].forEach(k => {
+        const span = document.getElementById(`txtPick_${k}`);
+        if (span) span.innerText = dict.chars[k];
+      });
+
+      ['Ko', 'Ja', 'En'].forEach(l => {
+        document.getElementById('btnLang' + l).classList.toggle('active', curLang.toLowerCase() === l.toLowerCase());
+        document.getElementById('btnInit' + l).classList.toggle('active', curLang.toLowerCase() === l.toLowerCase());
+      });
+    }
+
     let lastTime = performance.now();
 
     function loop(currentTime) {
       const elapsed = currentTime - lastTime;
       lastTime = currentTime;
-      const dt = Math.min(elapsed / 16.666, 3.0) || 1.0;
+      const dt = isGamePaused ? 0 : (Math.min(elapsed / 16.666, 3.0) || 1.0);
 
       let shakeOffsetX = 0;
       let shakeOffsetY = 0;
-      if (shakeTimer > 0) {
+      if (shakeTimer > 0 && !isGamePaused) {
         shakeTimer -= dt;
         const intensity = Math.min(shakeTimer / 15, 3.5);
         shakeOffsetX = (Math.random() - 0.5) * intensity * 2;
@@ -1053,22 +2277,6 @@
       ctx.scale(dpr, dpr);
       ctx.imageSmoothingEnabled = false;
 
-      // 설정 또는 방찾기 모달 열림으로 인한 일시정지 상태일 때
-      if (isGamePaused) {
-        // 기존 씬 유지 상태에서 일시정지 반투명 오버레이 출력
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
-        ctx.fillRect(0, 0, viewW, viewH);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = `bold 22px ${I18N[curLang].fontFamily}`;
-        ctx.textAlign = 'center';
-        ctx.fillText(I18N[curLang].pauseText, viewW / 2, viewH / 2);
-
-        ctx.restore();
-        requestAnimationFrame(loop);
-        return;
-      }
-
       if (gameState === 'MATCH_INTRO') {
         drawMatchIntro(dt);
         ctx.restore();
@@ -1076,8 +2284,8 @@
         return;
       }
 
-      // 3초 자동 서브
-      if (gameState === 'SERVE' || gameState === 'ROUND_OVER') {
+      // 3초 자동 서브 카운트다운
+      if ((gameState === 'SERVE' || gameState === 'ROUND_OVER') && !isGamePaused) {
         if (netMode !== 'CLIENT') {
           autoServeTimer -= dt;
           if (autoServeTimer <= 0) {
@@ -1102,7 +2310,7 @@
       ctx.lineWidth = 4;
       ctx.strokeRect(15, 15, viewW - 30, viewH - 30);
 
-      if (netMode !== 'CLIENT') {
+      if (netMode !== 'CLIENT' && !isGamePaused) {
         if (netMode === 'HOST') {
           ai.x = guestMouseX - ai.w / 2;
           if (ai.x < 15) ai.x = 15;
@@ -1314,13 +2522,13 @@
         }
       }
 
-      const playerSpeed = Math.abs(player.x - player.lastX);
+      const playerSpeed = isGamePaused ? 0 : Math.abs(player.x - player.lastX);
       player.lastX = player.x;
       player.bounceTimer += (0.16 + playerSpeed * 0.05) * dt;
       const playerHop = Math.abs(Math.sin(player.bounceTimer)) * 9;
       const playerSquash = (playerHop < 1.5) ? 0.92 : 1.0;
 
-      const aiSpeed = Math.abs(ai.x - ai.lastX);
+      const aiSpeed = isGamePaused ? 0 : Math.abs(ai.x - ai.lastX);
       ai.lastX = ai.x;
       ai.bounceTimer += (0.16 + aiSpeed * 0.05) * dt;
       const aiHop = Math.abs(Math.sin(ai.bounceTimer)) * 9;
@@ -1383,6 +2591,17 @@
         ctx.fillText(I18N[curLang].nextRound.replace('{sec}', serveRemainingSec), viewW / 2, viewH / 2 + 35);
       }
 
+      // 일시정지 오버레이
+      if (isGamePaused) {
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+        ctx.fillRect(0, 0, viewW, viewH);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold 22px ${I18N[curLang].fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(I18N[curLang].pauseText, viewW / 2, viewH / 2);
+      }
+
       ctx.restore();
       requestAnimationFrame(loop);
     }
@@ -1393,6 +2612,8 @@
     updateCharMiniAvatars();
 
     document.getElementById('initModal').style.display = 'flex';
+    pauseGameForModal();
+
     requestAnimationFrame((t) => { lastTime = t; loop(t); });
   </script>
 </body>
