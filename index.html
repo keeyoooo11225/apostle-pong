@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>사도 핑퐁 - Apostle Pong</title>
-  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script type="text/javascript" nonce="8da5cbfe58a741ac9078c394d37" src="//local.adguard.org?ts=1790930527165&amp;type=content-script&amp;dmn=chatgpt.com&amp;url=https%3A%2F%2Fchatgpt.com%2Fbackend-api%2Festuary%2Fcontent%3Fid%3Dfile_000000005394820bab0fdaee89552e19%26fn%3DApocalypse_Pong_multiplayer_fixed.html%26cd%3Dattachment%26ts%3D497480%26p%3Dfs%26cid%3D1%26sig%3Ddfaaf99d322018aaab2fecaba0854aa3272ef5195b5fd788a5a2e5491ee4c5cd%26v%3D0&amp;app=chrome.exe&amp;css=2&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1"></script><script type="text/javascript" nonce="8da5cbfe58a741ac9078c394d37" src="//local.adguard.org?ts=1790930527165&amp;name=AdGuard%20Extra&amp;name=AdGuard%20Popup%20Blocker&amp;type=user-script"></script><script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <style>
     @font-face {
       font-family: 'ONEMobilePOP';
@@ -665,7 +665,7 @@
       document.getElementById('lblScorePlayer').innerText = myNickname;
 
       if (conn && conn.open) {
-        conn.send({ type: 'NICKNAME', name: myNickname });
+        sendP2P({ type: 'NICKNAME', name: myNickname });
       }
 
       popups.push(new PopupText(viewW / 2, viewH / 2 - 20, `${I18N[curLang].nickSavedPrefix}: ${myNickname}`, THEMES[curPlayerChar].dark));
@@ -1061,7 +1061,7 @@
       document.getElementById('revengeStatusTxt').innerText = I18N[curLang].revengeWaiting;
 
       if (conn && conn.open) {
-        conn.send({ type: 'REVENGE_REQUEST' });
+        sendP2P({ type: 'REVENGE_REQUEST' });
       }
     }
 
@@ -1332,77 +1332,218 @@
     let netMode = 'OFFLINE';
     let guestMouseX = viewW / 2;
 
-    function openMultiModal() { document.getElementById('multiModal').style.display = 'flex'; }
-    function closeMultiModal() { document.getElementById('multiModal').style.display = 'none'; }
+    let disconnectingMulti = false;
+    let remoteReady = false;
+    let outgoingQueue = [];
+
+    function openMultiModal() {
+      document.getElementById('multiModal').style.display = 'flex';
+    }
+
+    function closeMultiModal() {
+      document.getElementById('multiModal').style.display = 'none';
+    }
 
     function generateRoomCode() {
       return 'TRICK-' + Math.floor(1000 + Math.random() * 9000);
     }
 
+    function setMultiStatus(text) {
+      const el = document.getElementById('multiStatusTxt');
+      if (el) el.innerText = text || '';
+    }
+
+    // PeerJS에서는 send()를 호출하는 순간에도 open 상태가 바뀔 수 있다.
+    // 따라서 게임 코드 전체에서 conn.send()를 직접 호출하지 않고 이 함수를 사용한다.
+    function sendP2P(data) {
+      if (!conn) return false;
+
+      if (!conn.open) {
+        outgoingQueue.push(data);
+        return false;
+      }
+
+      try {
+        conn.send(data);
+        return true;
+      } catch (err) {
+        console.error('[P2P] send failed:', err);
+        outgoingQueue.push(data);
+        return false;
+      }
+    }
+
+    function flushP2PQueue(connection) {
+      if (!connection || connection !== conn || !connection.open) return;
+      if (!outgoingQueue.length) return;
+
+      const queue = outgoingQueue.slice();
+      outgoingQueue.length = 0;
+
+      for (const packet of queue) {
+        try {
+          if (connection.open) {
+            connection.send(packet);
+          } else {
+            outgoingQueue.push(packet);
+            break;
+          }
+        } catch (err) {
+          console.error('[P2P] queued send failed:', err);
+          outgoingQueue.push(packet);
+          break;
+        }
+      }
+    }
+
+    function resetP2PState() {
+      remoteReady = false;
+      outgoingQueue.length = 0;
+    }
+
     function initPeer(callback) {
-      if (peer && !peer.destroyed) { callback(); return; }
-      peer = new Peer(generateRoomCode());
-      peer.on('open', () => { callback(); });
+      if (peer && !peer.destroyed) {
+        if (peer.open) callback();
+        else peer.once('open', callback);
+        return;
+      }
+
+      const roomId = generateRoomCode();
+      peer = new Peer(roomId);
+
+      peer.on('open', () => {
+        callback();
+      });
+
       peer.on('error', (err) => {
-        document.getElementById('multiStatusTxt').innerText = 'Network error: ' + err.type;
+        console.error('[P2P] Peer error:', err);
+        const type = err && err.type ? err.type : 'unknown';
+        setMultiStatus('P2P 오류: ' + type);
+      });
+
+      peer.on('disconnected', () => {
+        console.warn('[P2P] Signaling server disconnected');
+      });
+
+      peer.on('close', () => {
+        console.warn('[P2P] Peer closed');
+      });
+    }
+
+    function startHostMatchIntro() {
+      if (netMode !== 'HOST') return;
+      if (!conn || !conn.open) {
+        setMultiStatus('상대방 연결을 기다리는 중...');
+        return;
+      }
+      if (!remoteReady) return;
+
+      remoteReady = false;
+
+      closeMultiModal();
+      hideRevengeModal();
+      prepareServeState();
+      startMatchIntro();
+
+      // conn.open을 다시 확인하고 안전한 송신 함수 사용
+      sendP2P({
+        type: 'START_INTRO',
+        hostChar: curPlayerChar,
+        hostNick: myNickname
       });
     }
 
     function createRoom() {
-      document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiConnecting;
+      disconnectingMulti = false;
+      resetP2PState();
+
+      setMultiStatus(I18N[curLang].multiConnecting);
+
       initPeer(() => {
         netMode = 'HOST';
         updateOpponentNameUI();
+
         document.getElementById('roomCodeDisplay').style.display = 'block';
         document.getElementById('myRoomId').innerText = peer.id;
-        document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiWaiting;
+        setMultiStatus(I18N[curLang].multiWaiting);
 
-        peer.on('connection', (c) => {
-          conn = c;
-          setupConnHandlers();
-          document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiGuestConnected;
-          setTimeout(() => {
-            closeMultiModal();
-            prepareServeState();
-            startMatchIntro();
-            if (conn && conn.open) conn.send({ type: 'START_INTRO', hostChar: curPlayerChar, hostNick: myNickname });
-          }, 600);
+        peer.on('connection', (newConn) => {
+          if (conn && conn !== newConn) {
+            try { conn.close(); } catch (e) {}
+          }
+
+          conn = newConn;
+          remoteReady = false;
+          outgoingQueue.length = 0;
+          disconnectingMulti = false;
+
+          setMultiStatus(I18N[curLang].multiGuestConnected);
+          setupConnHandlers(newConn);
         });
       });
     }
 
     function joinRoom() {
       const code = document.getElementById('joinRoomInput').value.trim();
-      if (!code) { 
-        alert(curLang === 'ko' ? '방 코드를 입력해주세요!' : (curLang === 'ja' ? 'コードを入力してください！' : 'Please enter room code!')); 
-        return; 
+
+      if (!code) {
+        alert(
+          curLang === 'ko'
+            ? '방 코드를 입력해주세요!'
+            : (curLang === 'ja' ? 'コードを入力してください！' : 'Please enter room code!')
+        );
+        return;
       }
-      document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiConnectingHost;
+
+      disconnectingMulti = false;
+      resetP2PState();
+      setMultiStatus(I18N[curLang].multiConnectingHost);
+
       initPeer(() => {
         netMode = 'CLIENT';
         updateOpponentNameUI();
-        conn = peer.connect(code, { reliable: true });
-        setupConnHandlers();
+
+        if (conn) {
+          try { conn.close(); } catch (e) {}
+        }
+
+        const newConn = peer.connect(code, { reliable: true });
+        conn = newConn;
+        setupConnHandlers(newConn);
       });
     }
 
-    function setupConnHandlers() {
-      conn.on('open', () => {
-        document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiConnected;
-        conn.send({ type: 'NICKNAME', name: myNickname });
-        conn.send({ type: 'CHAR', char: curPlayerChar });
+    function setupConnHandlers(connection) {
+      if (!connection) return;
+      if (connection.__apocalypsePongHandlersAttached) return;
+      connection.__apocalypsePongHandlersAttached = true;
 
-        // 게스트 접속 성공 시 모달 자동 닫기 및 인트로 진입 보장
+      connection.on('open', () => {
+        // 반드시 이벤트를 발생시킨 connection을 기준으로 처리한다.
+        if (connection !== conn) return;
+
+        setMultiStatus(I18N[curLang].multiConnected);
+
+        // open 이벤트 안에서만 송신한다.
+        sendP2P({ type: 'NICKNAME', name: myNickname });
+        sendP2P({ type: 'CHAR', char: curPlayerChar });
+
         if (netMode === 'CLIENT') {
-          setTimeout(() => {
-            closeMultiModal();
-            prepareServeState();
-            startMatchIntro();
-          }, 500);
+          // 게스트는 START_INTRO를 기다린다.
+          sendP2P({ type: 'READY' });
+        } else if (netMode === 'HOST') {
+          // 호스트는 READY를 받을 때까지 기다린다.
+          setMultiStatus(I18N[curLang].multiGuestConnected);
         }
+
+        // 혹시 open 이벤트 전에 쌓인 패킷이 있으면 여기서 비운다.
+        flushP2PQueue(connection);
       });
 
-      conn.on('data', (data) => {
+      connection.on('data', (data) => {
+        if (!data || typeof data !== 'object') return;
+        if (connection !== conn) return;
+
         if (data.type === 'NICKNAME') {
           opponentNickname = data.name || '상대';
           updateOpponentNameUI();
@@ -1411,14 +1552,25 @@
 
         if (data.type === 'CHAR') {
           curAiChar = data.char;
-          document.getElementById('aiCharSelect').value = curAiChar;
+          const select = document.getElementById('aiCharSelect');
+          if (select) select.value = curAiChar;
           updateCharMiniAvatars();
+          return;
+        }
+
+        if (data.type === 'READY') {
+          if (netMode === 'HOST') {
+            remoteReady = true;
+            setMultiStatus(I18N[curLang].multiGuestConnected);
+            startHostMatchIntro();
+          }
           return;
         }
 
         if (data.type === 'START_INTRO') {
           if (data.hostChar) curAiChar = data.hostChar;
           if (data.hostNick) opponentNickname = data.hostNick;
+
           updateOpponentNameUI();
           updateCharMiniAvatars();
           closeMultiModal();
@@ -1431,57 +1583,110 @@
         if (data.type === 'REVENGE_REQUEST') {
           if (revengeRequestedByMe) {
             hideRevengeModal();
+
             if (netMode === 'HOST') {
+              remoteReady = false;
               prepareServeState();
               startMatchIntro();
-              conn.send({ type: 'START_INTRO', hostChar: curPlayerChar, hostNick: myNickname });
+              sendP2P({
+                type: 'START_INTRO',
+                hostChar: curPlayerChar,
+                hostNick: myNickname
+              });
+            } else {
+              sendP2P({ type: 'REVENGE_READY' });
             }
           } else {
-            document.getElementById('revengeStatusTxt').innerText = '상대방이 리벤지를 신청했습니다!';
+            const status = document.getElementById('revengeStatusTxt');
+            if (status) status.innerText = '상대방이 리벤지를 신청했습니다!';
+          }
+          return;
+        }
+
+        if (data.type === 'REVENGE_READY') {
+          if (netMode === 'HOST' && revengeRequestedByMe) {
+            hideRevengeModal();
+            prepareServeState();
+            startMatchIntro();
+            sendP2P({
+              type: 'START_INTRO',
+              hostChar: curPlayerChar,
+              hostNick: myNickname
+            });
           }
           return;
         }
 
         if (netMode === 'CLIENT') {
           handleHostSyncPacket(data);
-        } else if (netMode === 'HOST') {
+          return;
+        }
+
+        if (netMode === 'HOST') {
           if (data.type === 'INPUT') {
-            guestMouseX = data.mouseX;
+            if (Number.isFinite(data.mouseX)) guestMouseX = data.mouseX;
           } else if (data.type === 'SERVE_TRIGGER') {
             triggerServeFromClient();
           }
         }
       });
 
-      conn.on('close', () => {
+      connection.on('error', (err) => {
+        console.error('[P2P] DataConnection error:', err);
+        const type = err && err.type ? err.type : 'unknown';
+        setMultiStatus('P2P 연결 오류: ' + type);
+      });
+
+      connection.on('close', () => {
+        if (connection !== conn) return;
         handlePeerDisconnected();
       });
     }
 
     function handlePeerDisconnected() {
+      if (disconnectingMulti) return;
+      disconnectingMulti = true;
+
       const msg = I18N[curLang].multiClosed;
       hideRevengeModal();
       disconnectMulti(false);
-      alert(msg);
+
+      // 실제 플레이 중 연결 종료일 때만 알림
+      if (msg) alert(msg);
     }
 
     window.addEventListener('beforeunload', () => {
-      if (conn && conn.open) {
-        conn.close();
+      const current = conn;
+      if (current && current.open) {
+        try { current.close(); } catch (e) {}
       }
     });
 
     function disconnectMulti(manual = false) {
-      if (conn) conn.close();
-      if (peer) peer.destroy();
-      peer = null;
+      disconnectingMulti = true;
+      outgoingQueue.length = 0;
+      remoteReady = false;
+
+      const oldConn = conn;
+      const oldPeer = peer;
       conn = null;
+      peer = null;
+
+      if (oldConn) {
+        try { oldConn.close(); } catch (e) {}
+      }
+      if (oldPeer) {
+        try { oldPeer.destroy(); } catch (e) {}
+      }
+
       netMode = 'OFFLINE';
       opponentNickname = 'AI';
       updateOpponentNameUI();
       updateCharMiniAvatars();
+
       document.getElementById('roomCodeDisplay').style.display = 'none';
-      document.getElementById('multiStatusTxt').innerText = '';
+      setMultiStatus('');
+
       if (manual) closeMultiModal();
       hideRevengeModal();
       prepareServeState();
@@ -1500,9 +1705,7 @@
         updateCharMiniAvatars();
       }
 
-      if (pkt.guestPaddleW) {
-        player.w = pkt.guestPaddleW;
-      }
+      if (pkt.guestPaddleW) player.w = pkt.guestPaddleW;
 
       balls = (pkt.balls || []).map(b => {
         const nb = new Ball(viewW - b.x, viewH - b.y, -b.vx, -b.vy);
@@ -1884,13 +2087,13 @@
           this.x = 19 + this.r;
           this.vx = -this.vx;
           playSound('wall');
-          if (netMode === 'HOST' && conn) conn.send({ type: 'EVENT', sfx: 'wall' });
+          if (netMode === 'HOST') sendP2P({ type: 'EVENT', sfx: 'wall' });
         }
         if (this.x + this.r >= viewW - 19) {
           this.x = viewW - 19 - this.r;
           this.vx = -this.vx;
           playSound('wall');
-          if (netMode === 'HOST' && conn) conn.send({ type: 'EVENT', sfx: 'wall' });
+          if (netMode === 'HOST') sendP2P({ type: 'EVENT', sfx: 'wall' });
         }
       }
 
@@ -2059,7 +2262,7 @@
       if (player.x + player.w > viewW - 15) player.x = viewW - 15 - player.w;
 
       if (netMode === 'CLIENT' && conn && conn.open) {
-        conn.send({ type: 'INPUT', mouseX: viewW - mouseX });
+        sendP2P({ type: 'INPUT', mouseX: viewW - mouseX });
       }
     });
 
@@ -2115,7 +2318,7 @@
       applyTheme(curPlayerChar);
       updateCharMiniAvatars();
       if (conn && conn.open) {
-        conn.send({ type: 'CHAR', char: curPlayerChar });
+        sendP2P({ type: 'CHAR', char: curPlayerChar });
       }
     }
 
@@ -2458,8 +2661,8 @@
           }
         }
 
-        if (netMode === 'HOST' && conn && conn.open) {
-          conn.send({
+        if (netMode === 'HOST' && conn) {
+          sendP2P({
             hostScore: playerScore,
             guestScore: aiScore,
             hostPaddleX: player.x,
