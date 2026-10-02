@@ -451,7 +451,7 @@
   </div>
 
   <!-- [초기 진입 모달] -->
-  <div class="modal-overlay" id="initModal">
+  <div class="modal-overlay" id="initModal" style="display: flex;">
     <div class="modal-box">
       <div class="modal-title">
         <span id="initModalTitle">✨ 시작 설정</span>
@@ -623,7 +623,7 @@
       <div id="matchResultSub" style="font-size: 13px; color: #64748b;">다시 한 판 승부를 겨루시겠습니까?</div>
       
       <div class="modal-row">
-        <button class="modal-btn btn-revenge" id="btnRevengeAction" onclick="onRevengeClicked()">⚔️️ 리벤지 (다시 하기)</button>
+        <button class="modal-btn btn-revenge" id="btnRevengeAction" onclick="onRevengeClicked()">⚔️ 리벤지 (다시 하기)</button>
         <button class="modal-btn btn-cancel" id="btnCancelAction" onclick="onCancelMatchClicked()">🚪 나가기 (취소)</button>
       </div>
       <div id="revengeStatusTxt" style="font-size: 12px; font-weight: bold; min-height: 16px;"></div>
@@ -1325,7 +1325,7 @@
     }
 
     // =============================================================
-    // P2P 멀티플레이 통신 엔진 (좌우 좌표 정밀 보정 버전)
+    // P2P 멀티플레이 통신 엔진 (안정화 버전)
     // =============================================================
     let peer = null;
     let conn = null;
@@ -2083,7 +2083,7 @@
       if (ai.x + ai.w > viewW - 15) ai.x = viewW - 15 - ai.w;
     }
 
-    // 메인 루프 (호스트/클라이언트 렌더링 및 동기화 루프 통합)
+    // 메인 게임 루프 (초기 화면 멈춤 방지 및 렌더링 강제 보장)
     let lastTime = performance.now();
 
     function loop(currentTime) {
@@ -2396,7 +2396,7 @@
         const drawPY = Math.floor(player.y - 14 - playerHop);
         ctx.translate(drawPX, drawPY);
         ctx.scale(1.0 / playerSquash, playerSquash);
-        ctx.drawImage(pSource, -pAsset.charW / 2, -pAsset.charH / 2, player.charW, player.charH);
+        ctx.drawImage(pSource, -player.charW / 2, -player.charH / 2, player.charW, player.charH);
         ctx.restore();
       }
 
@@ -2430,6 +2430,7 @@
     prepareServeState();
     updateCharMiniAvatars();
 
+    // 초기 실행 시 모달이 확실히 뜨도록 강제 오픈
     document.getElementById('initModal').style.display = 'flex';
     requestAnimationFrame((t) => { lastTime = t; loop(t); });
   </script>
