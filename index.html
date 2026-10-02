@@ -141,6 +141,8 @@
       border: 2.5px solid var(--theme-main);
       border-radius: 18px;
       cursor: none;
+      -ms-interpolation-mode: nearest-neighbor;
+      image-rendering: -webkit-optimize-contrast;
       image-rendering: pixelated;
       image-rendering: crisp-edges;
       touch-action: none;
@@ -365,33 +367,22 @@
       color: var(--theme-dark);
     }
 
-    /* 패치노트 리스트 */
     .patch-list {
       max-height: 250px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: 10px;
-      font-size: 12px;
-      padding-right: 4px;
+      font-size: 13px;
+      padding: 6px 4px;
     }
     .patch-item {
       background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 10px;
-    }
-    .patch-item h4 {
-      margin: 0 0 5px 0;
-      font-size: 13px;
-      color: var(--theme-dark);
-      font-weight: normal;
-    }
-    .patch-item ul {
-      margin: 0;
-      padding-left: 18px;
-      color: #475569;
-      line-height: 1.45;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 12px;
+      line-height: 1.5;
+      color: #334155;
     }
   </style>
 </head>
@@ -452,10 +443,9 @@
         게임 시작 전 사도를 선택하세요! 경기 중에는 변경할 수 없습니다 (10세트 선취전).
       </div>
 
-      <!-- [맨 아래 저작권 & 크레딧 표기란] -->
       <div class="credit-footer" id="creditFooter">
         도트 제작: KEEYO(キヨ)<br>
-        해당 코딩은 AI로 생성되었으며 모든 캐릭터에 대한 저작권은 EPID Games에게 있음을 밝힙니다.
+        해당 코딩은 AI로 생성되었으며 모든 사도에 대한 저작권은 EPID Games에게 있음을 밝힙니다.
       </div>
     </div>
   </div>
@@ -508,16 +498,18 @@
     </div>
   </div>
 
-  <!-- [신규: 패치내역 모달 (벨 모양)] -->
+  <!-- [패치내역 모달 (벨 모양) - 요청사항 반영] -->
   <div class="modal-overlay" id="patchModal">
     <div class="modal-box">
       <div class="modal-title">
-        <span id="patchModalTitle">🔔 패치 내역 (Patch Notes)</span>
+        <span id="patchModalTitle">🔔 패치 내역</span>
         <button style="border:none;background:none;font-size:20px;cursor:pointer;" onclick="closePatchModal()">✕</button>
       </div>
 
       <div class="patch-list" id="patchContentArea">
-        <!-- 언어별 동적 렌더링 -->
+        <div class="patch-item" id="patchTextItem">
+          네르 다야 아직 미구현
+        </div>
       </div>
     </div>
   </div>
@@ -640,7 +632,7 @@
 
   <script>
     const canvas = document.getElementById('pongCanvas');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: false });
     const gameFrame = document.getElementById('gameFrame');
 
     const viewW = 430;
@@ -688,7 +680,8 @@
         initChar: "플레이할 사도를 선택하세요!",
         initStartBtn: "게임 시작하기 🚀",
         patchTitle: "🔔 패치 내역",
-        creditHtml: "도트 제작: KEEYO(キヨ)<br>해당 코딩은 AI로 생성되었으며 모든 캐릭터에 대한 저작권은 EPID Games에게 있음을 밝힙니다.",
+        patchDesc: "네르 다야 아직 미구현",
+        creditHtml: "도트 제작: KEEYO(キヨ)<br>해당 코딩은 AI로 생성되었으며 모든 사도에 대한 저작권은 EPID Games에게 있음을 밝힙니다.",
         nicknameTitle: "플레이어 닉네임",
         saveNickBtn: "저장",
         nickSavedPrefix: "닉네임 저장",
@@ -760,7 +753,8 @@
         initChar: "プレイする使徒を選択してください！",
         initStartBtn: "ゲームスタート 🚀",
         patchTitle: "🔔 パッチノート",
-        creditHtml: "ドット制作: KEEYO(キヨ)<br>本コードはAIによって生成されており、すべてのキャラクターの著作権はEPID Gamesに帰属します。",
+        patchDesc: "ネル、ダーヤは現在未実装です",
+        creditHtml: "ドット制作: KEEYO(キヨ)<br>本コードはAIによって生成されており、すべての使徒の著作権はEPID Gamesに帰属します。",
         nicknameTitle: "プレイヤー名",
         saveNickBtn: "保存",
         nickSavedPrefix: "プレイヤー名を保存",
@@ -832,7 +826,8 @@
         initChar: "Choose your Apostle!",
         initStartBtn: "Start Match 🚀",
         patchTitle: "🔔 Patch Notes",
-        creditHtml: "Pixel Art: KEEYO(キヨ)<br>Code generated with AI. All character copyrights belong to EPID Games.",
+        patchDesc: "Ner and Daya are not implemented yet.",
+        creditHtml: "Pixel Art: KEEYO(キヨ)<br>Code generated with AI. All Apostle copyrights belong to EPID Games.",
         nicknameTitle: "Player Nickname",
         saveNickBtn: "Save",
         nickSavedPrefix: "Saved Nickname",
@@ -898,99 +893,6 @@
       }
     };
 
-    const PATCH_NOTES_DATA = {
-      ko: [
-        {
-          ver: "v1.2.0 (멀티플레이 & 편의성 대규모 개선)",
-          items: [
-            "1:1 P2P 멀티플레이 리벤지(재경기) 상호 수락 시스템 추가",
-            "모바일 앱 전환(백그라운드) 시 접속 끊김 방지 및 오디오 일시정지 보호",
-            "설정 및 멀티플레이 창 오픈 시 AI 대전 자동 일시정지(PAUSE) 적용",
-            "사도별 전용 고화질 도트 프로필 및 정수배 업스케일러 최적화",
-            "첫 실행 시 언어 및 사도 선택 팝업 추가",
-            "크레딧 및 저작권 표기 추가"
-          ]
-        },
-        {
-          ver: "v1.1.0 (사운드 & 모바일 최적화)",
-          items: [
-            "복싱/레슬링 링 벨 효과음 자동 재생 및 하모닉스 개선",
-            "모바일 뷰포트 반응형 스케일러 및 터치 제스처 끊김 개선",
-            "BGM 1회 완주 / 무한 반복 토글 설정 추가"
-          ]
-        },
-        {
-          ver: "v1.0.0 (사도 핑퐁 릴리즈)",
-          items: [
-            "버터, 림, 네르, 아야, 다야 5종 사도 플레이 지원",
-            "4종 필드 아이템 (가드 확대/축소, 별사탕 복제, 슬라임 범퍼)",
-            "크로싱 드론 방해 기믹 탑재",
-            "10세트 선취전 대전 시스템 구현"
-          ]
-        }
-      ],
-      ja: [
-        {
-          ver: "v1.2.0 (マルチプレイ＆利便性アップデート)",
-          items: [
-            "1:1 P2Pマルチプレイ再戦(リベンジ)相互同意システム追加",
-            "モバイルのバックグラウンド移行時の切断防止＆オーディオ一時停止保護",
-            "設定およびマルチ画面表示時のAI対戦一時停止(PAUSE)適用",
-            "使徒専用ドットプロフィールの最適化と画質改善",
-            "初回起動時の言語＆使徒選択ポップアップ実装",
-            "クレジット及び著作権表記の追加"
-          ]
-        },
-        {
-          ver: "v1.1.0 (サウンド＆モバイル最適化)",
-          items: [
-            "試合開始リングゴング効果音の自動再生＆響き向上",
-            "モバイル画面の比率自動調整＆タッチ遅延の解消",
-            "BGMの1回再生/ループ再生切り替え機能追加"
-          ]
-        },
-        {
-          ver: "v1.0.0 (使徒ピンポン リリース)",
-          items: [
-            "バター、リム、ネル、アヤ、ダーヤの5使徒対応",
-            "4種のフィールドアイテムギミック実装",
-            "ドローン通過妨害ギミック搭載",
-            "10点先取マッチシステム"
-          ]
-        }
-      ],
-      en: [
-        {
-          ver: "v1.2.0 (Multiplayer & Quality of Life Update)",
-          items: [
-            "1v1 P2P Rematch mutual confirmation flow added",
-            "Background protection against disconnects on mobile app switching",
-            "Auto PAUSE during Settings & Multiplayer modal views",
-            "High-resolution crisp pixel art upscaling for all Apostles",
-            "Initial setup prompt for Language & Character selection",
-            "Credits and official copyright notice added"
-          ]
-        },
-        {
-          ver: "v1.1.0 (Sound & Mobile Optimization)",
-          items: [
-            "Ring Bell clash sound tuned with clear resonant harmonics",
-            "Responsive layout scaling & touch lag elimination on mobile",
-            "BGM play-once / infinite loop mode toggle"
-          ]
-        },
-        {
-          ver: "v1.0.0 (Initial Release)",
-          items: [
-            "Playable 5 Apostles: Butter, Rim, Ner, Aya, Daya",
-            "4 Field items: Expand, Shrink, Multi-Ball, Slime Bumper",
-            "Crossing Drone obstacle event",
-            "10-point victory match system"
-          ]
-        }
-      ]
-    };
-
     let curLang = 'ko';
     let curDifficulty = 'normal';
     const DIFF_CONFIG = {
@@ -1043,11 +945,14 @@
       item_macaron: { src: 'item_macaron.png', img: null, upscaled: null }
     };
 
+    // 무손실 정수 픽셀(Nearest-Neighbor) 4배 업스케일러
     function createUpscaledCanvas(img, scale = 4) {
       try {
+        const w = (img.naturalWidth || img.width || 64);
+        const h = (img.naturalHeight || img.height || 64);
         const oc = document.createElement('canvas');
-        oc.width = (img.naturalWidth || img.width) * scale;
-        oc.height = (img.naturalHeight || img.height) * scale;
+        oc.width = w * scale;
+        oc.height = h * scale;
         const octx = oc.getContext('2d');
         octx.imageSmoothingEnabled = false;
         octx.drawImage(img, 0, 0, oc.width, oc.height);
@@ -1235,29 +1140,14 @@
       resumeGameFromModal();
     }
 
-    // 패치노트 모달 열기/닫기
     function openPatchModal() {
       pauseGameForModal();
-      renderPatchNotes();
       document.getElementById('patchModal').style.display = 'flex';
     }
 
     function closePatchModal() {
       document.getElementById('patchModal').style.display = 'none';
       resumeGameFromModal();
-    }
-
-    function renderPatchNotes() {
-      const area = document.getElementById('patchContentArea');
-      const data = PATCH_NOTES_DATA[curLang] || PATCH_NOTES_DATA.ko;
-      area.innerHTML = data.map(item => `
-        <div class="patch-item">
-          <h4>${item.ver}</h4>
-          <ul>
-            ${item.items.map(li => `<li>${li}</li>`).join('')}
-          </ul>
-        </div>
-      `).join('');
     }
 
     // =============================================================
@@ -2381,6 +2271,7 @@
       document.getElementById('lblInitChar').innerText = dict.initChar;
       document.getElementById('btnConfirmStart').innerText = dict.initStartBtn;
       document.getElementById('patchModalTitle').innerText = dict.patchTitle;
+      document.getElementById('patchTextItem').innerText = dict.patchDesc;
       document.getElementById('creditFooter').innerHTML = dict.creditHtml;
 
       document.getElementById('lblNicknameTitle').innerText = dict.nicknameTitle;
@@ -2437,12 +2328,10 @@
         document.getElementById('btnLang' + l).classList.toggle('active', curLang.toLowerCase() === l.toLowerCase());
         document.getElementById('btnInit' + l).classList.toggle('active', curLang.toLowerCase() === l.toLowerCase());
       });
-
-      renderPatchNotes();
     }
 
     // =============================================================
-    // 메인 루프 (일시정지 완벽 연동)
+    // 메인 루프
     // =============================================================
     let lastTime = performance.now();
 
@@ -2782,7 +2671,6 @@
         ctx.fillText(I18N[curLang].nextRound.replace('{sec}', serveRemainingSec), viewW / 2, viewH / 2 + 35);
       }
 
-      // 일시정지 오버레이
       if (isGamePaused) {
         ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
         ctx.fillRect(0, 0, viewW, viewH);
@@ -2802,7 +2690,6 @@
     prepareServeState();
     updateCharMiniAvatars();
 
-    // 초기 시작 모달 팝업 표시
     document.getElementById('initModal').style.display = 'flex';
 
     requestAnimationFrame((t) => { lastTime = t; loop(t); });
