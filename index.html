@@ -820,6 +820,9 @@
         initLang: "Language",
         initChar: "Choose your Apostle!",
         initStartBtn: "Start Match 🚀",
+        patchTitle: "🔔 Patch Notes",
+        patchDesc: "Ner and Daya are not implemented yet.",
+        creditHtml: "Pixel Art: KEEYO(キヨ)<br>Code generated with AI. All Apostle copyrights belong to EPID Games.",
         nicknameTitle: "Player Nickname",
         saveNickBtn: "Save",
         nickSavedPrefix: "Saved Nickname",
@@ -1322,7 +1325,7 @@
     }
 
     // =============================================================
-    // P2P 멀티플레이 통신 엔진 (순정 원본 구조)
+    // P2P 멀티플레이 통신 엔진 (매칭 전환 자동화 보강)
     // =============================================================
     let peer = null;
     let conn = null;
@@ -1358,12 +1361,14 @@
           conn = c;
           setupConnHandlers();
           document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiGuestConnected;
+          
+          // 게스트 접속 시 양측 모달 닫기 및 인트로 동기화 신호 전송
           setTimeout(() => {
             closeMultiModal();
             prepareServeState();
             startMatchIntro();
             if (conn && conn.open) conn.send({ type: 'START_INTRO', hostChar: curPlayerChar, hostNick: myNickname });
-          }, 600);
+          }, 500);
         });
       });
     }
@@ -1388,6 +1393,13 @@
         document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiConnected;
         conn.send({ type: 'NICKNAME', name: myNickname });
         conn.send({ type: 'CHAR', char: curPlayerChar });
+
+        // 게스트(참가자) 측에서 연결 성공 시 자동으로 멀티 모달 창 닫기
+        if (netMode === 'CLIENT') {
+          setTimeout(() => {
+            closeMultiModal();
+          }, 300);
+        }
       });
 
       conn.on('data', (data) => {
@@ -2200,7 +2212,7 @@
     }
 
     // =============================================================
-    // 메인 루프 (자동 서브 & 인트로 연출 지원)
+    // 메인 루프 (호스트/클라이언트 렌더링 동기화 완벽 통합)
     // =============================================================
     let lastTime = performance.now();
 
@@ -2223,8 +2235,7 @@
 
       ctx.save();
       ctx.scale(dpr, dpr);
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
+      ctx.imageSmoothingEnabled = false;
 
       if (gameState === 'MATCH_INTRO') {
         drawMatchIntro(dt);
