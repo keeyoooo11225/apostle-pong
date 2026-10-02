@@ -53,7 +53,6 @@
       touch-action: none;
     }
 
-    /* 모바일 비율 자동 최적화 컨테이너 */
     .game-scaler {
       width: 100%;
       height: 100%;
@@ -563,7 +562,7 @@
     </div>
   </div>
 
-  <!-- 리벤지 / 취소 모달 -->
+  <!-- [개선된 리벤지 모달] 상대방 수락 대기 및 수락 버튼 연동 -->
   <div class="modal-overlay" id="revengeModal">
     <div class="modal-box" style="text-align: center; gap: 14px;">
       <div id="matchResultTitle" style="font-size: 22px; font-weight: bold; margin-top: 4px;">GAME OVER</div>
@@ -573,7 +572,7 @@
         <button class="modal-btn btn-revenge" id="btnRevengeAction" onclick="onRevengeClicked()">⚔️ 리벤지 (다시 하기)</button>
         <button class="modal-btn btn-cancel" id="btnCancelAction" onclick="onCancelMatchClicked()">🚪 나가기 (취소)</button>
       </div>
-      <div id="revengeStatusTxt" style="font-size: 11.5px; color: #e11d48; min-height: 15px;"></div>
+      <div id="revengeStatusTxt" style="font-size: 12px; font-weight: bold; min-height: 16px;"></div>
     </div>
   </div>
 
@@ -661,9 +660,11 @@
         winFinal: "승리했습니다! 🎉",
         loseFinal: "패배했습니다... 💧",
         revengeBtn: "⚔️ 리벤지 (다시 하기)",
+        revengeAcceptBtn: "⚔️ 리벤지 수락하기!",
         cancelBtn: "🚪 나가기 (취소)",
         revengeAsk: "다시 한 판 승부를 겨루시겠습니까?",
         revengeWaiting: "상대방의 리벤지 수락을 기다리는 중...",
+        revengeOpponentRequested: "상대방이 리벤지를 신청했습니다!",
         nextRound: "다음 세트 준비 중... ({sec}초)",
         point: "POINT!! 🎉",
         miss: "MISS... 💧",
@@ -728,9 +729,11 @@
         winFinal: "勝利しました！🎉",
         loseFinal: "敗北しました... 💧",
         revengeBtn: "⚔️ 再戦する (リベンジ)",
+        revengeAcceptBtn: "⚔️ 再戦を受ける！",
         cancelBtn: "🚪 終了 (キャンセル)",
         revengeAsk: "もう一勝負しますか？",
         revengeWaiting: "相手の再戦同意を待機中...",
+        revengeOpponentRequested: "相手から再戦の申し込みが届きました！",
         nextRound: "次のセットへ準備中... ({sec}秒)",
         point: "POINT!! 🎉",
         miss: "MISS... 💧",
@@ -796,9 +799,11 @@
         winFinal: "YOU WIN! 🎉",
         loseFinal: "YOU LOSE... 💧",
         revengeBtn: "⚔️ Revenge (Rematch)",
+        revengeAcceptBtn: "⚔️ Accept Rematch!",
         cancelBtn: "🚪 Quit (Cancel)",
         revengeAsk: "Would you like a rematch?",
         revengeWaiting: "Waiting for opponent to accept...",
+        revengeOpponentRequested: "Opponent challenged you to a rematch!",
         nextRound: "Next round in {sec}s...",
         point: "POINT!! 🎉",
         miss: "MISS... 💧",
@@ -968,7 +973,11 @@
       }
     }
 
+    // =============================================================
+    // [완전 동기화 리벤지 / 취소 시스템]
+    // =============================================================
     let revengeRequestedByMe = false;
+    let revengeRequestedByOpponent = false;
 
     function showRevengeModal(isWinner) {
       const titleElem = document.getElementById('matchResultTitle');
@@ -980,6 +989,7 @@
       document.getElementById('btnCancelAction').innerText = I18N[curLang].cancelBtn;
       document.getElementById('revengeStatusTxt').innerText = '';
       revengeRequestedByMe = false;
+      revengeRequestedByOpponent = false;
 
       document.getElementById('revengeModal').style.display = 'flex';
     }
@@ -987,6 +997,8 @@
     function hideRevengeModal() {
       document.getElementById('revengeModal').style.display = 'none';
       document.getElementById('revengeStatusTxt').innerText = '';
+      revengeRequestedByMe = false;
+      revengeRequestedByOpponent = false;
     }
 
     function onRevengeClicked() {
@@ -998,10 +1010,23 @@
       }
 
       revengeRequestedByMe = true;
-      document.getElementById('revengeStatusTxt').innerText = I18N[curLang].revengeWaiting;
 
-      if (conn && conn.open) {
-        conn.send({ type: 'REVENGE_REQUEST' });
+      if (revengeRequestedByOpponent) {
+        // 상대방이 이미 신청한 상태에서 내가 누른 경우 -> 바로 재경기 시작
+        hideRevengeModal();
+        if (conn && conn.open) {
+          conn.send({ type: 'REVENGE_START' });
+        }
+        prepareServeState();
+        startMatchIntro();
+      } else {
+        // 내가 먼저 누른 경우 -> 대기 상태
+        document.getElementById('btnRevengeAction').innerText = '⏳ 요청 중...';
+        document.getElementById('revengeStatusTxt').innerText = I18N[curLang].revengeWaiting;
+        document.getElementById('revengeStatusTxt').style.color = '#0284c7';
+        if (conn && conn.open) {
+          conn.send({ type: 'REVENGE_REQUEST' });
+        }
       }
     }
 
@@ -1014,6 +1039,9 @@
       }
     }
 
+    // =============================================================
+    // [양측 배너 충돌 + 5초 대기 인트로 연출 모듈]
+    // =============================================================
     let matchIntroTimer = 0;
     const MATCH_INTRO_DURATION = 330;
     const SLIDE_DURATION = 30;
@@ -1261,10 +1289,14 @@
       }
     }
 
+    // =============================================================
+    // P2P 멀티플레이 통신 엔진 (모바일 백그라운드 전환 보호 패치)
+    // =============================================================
     let peer = null;
     let conn = null;
     let netMode = 'OFFLINE';
     let guestMouseX = viewW / 2;
+    let disconnectTimeout = null;
 
     function openMultiModal() { document.getElementById('multiModal').style.display = 'flex'; }
     function closeMultiModal() { document.getElementById('multiModal').style.display = 'none'; }
@@ -1275,7 +1307,15 @@
 
     function initPeer(callback) {
       if (peer && !peer.destroyed) { callback(); return; }
-      peer = new Peer(generateRoomCode());
+      peer = new Peer(generateRoomCode(), {
+        debug: 1,
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+          ]
+        }
+      });
       peer.on('open', () => { callback(); });
       peer.on('error', (err) => {
         document.getElementById('multiStatusTxt').innerText = 'Network error: ' + err.type;
@@ -1322,6 +1362,10 @@
 
     function setupConnHandlers() {
       conn.on('open', () => {
+        if (disconnectTimeout) {
+          clearTimeout(disconnectTimeout);
+          disconnectTimeout = null;
+        }
         document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiConnected;
         conn.send({ type: 'NICKNAME', name: myNickname });
         conn.send({ type: 'CHAR', char: curPlayerChar });
@@ -1353,17 +1397,20 @@
           return;
         }
 
+        // 상대방이 리벤지 신청
         if (data.type === 'REVENGE_REQUEST') {
-          if (revengeRequestedByMe) {
-            hideRevengeModal();
-            if (netMode === 'HOST') {
-              prepareServeState();
-              startMatchIntro();
-              conn.send({ type: 'START_INTRO', hostChar: curPlayerChar, hostNick: myNickname });
-            }
-          } else {
-            document.getElementById('revengeStatusTxt').innerText = '상대방이 리벤지를 신청했습니다!';
-          }
+          revengeRequestedByOpponent = true;
+          document.getElementById('revengeStatusTxt').innerText = I18N[curLang].revengeOpponentRequested;
+          document.getElementById('revengeStatusTxt').style.color = '#16a34a';
+          document.getElementById('btnRevengeAction').innerText = I18N[curLang].revengeAcceptBtn;
+          return;
+        }
+
+        // 양측 합의로 리벤지 확정 시작
+        if (data.type === 'REVENGE_START') {
+          hideRevengeModal();
+          prepareServeState();
+          startMatchIntro();
           return;
         }
 
@@ -1379,7 +1426,14 @@
       });
 
       conn.on('close', () => {
-        handlePeerDisconnected();
+        // 모바일 백그라운드 전환 유예 처리: 3초 후에도 백그라운드 복귀가 안 될 때만 완전 종료
+        if (document.hidden) {
+          disconnectTimeout = setTimeout(() => {
+            handlePeerDisconnected();
+          }, 20000); // 20초간 유예
+        } else {
+          handlePeerDisconnected();
+        }
       });
     }
 
@@ -1390,6 +1444,23 @@
       alert(msg);
     }
 
+    // 모바일 앱 전환 시 오디오만 일시정지, P2P 접속 유지
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        if (audioCtx && audioCtx.state === 'running') {
+          audioCtx.suspend();
+        }
+      } else {
+        if (disconnectTimeout) {
+          clearTimeout(disconnectTimeout);
+          disconnectTimeout = null;
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+      }
+    });
+
     window.addEventListener('beforeunload', () => {
       if (conn && conn.open) {
         conn.close();
@@ -1397,6 +1468,10 @@
     });
 
     function disconnectMulti(manual = false) {
+      if (disconnectTimeout) {
+        clearTimeout(disconnectTimeout);
+        disconnectTimeout = null;
+      }
       if (conn) conn.close();
       if (peer) peer.destroy();
       peer = null;
@@ -1976,7 +2051,7 @@
       if (ai.x + ai.w > viewW - 15) ai.x = viewW - 15 - ai.w;
     }
 
-    // 모바일 터치 및 마우스 입력 정규화 (화면 잘림 & 스케일 비율 대응)
+    // 모바일 터치 및 마우스 입력 정규화
     function handlePointerCoord(clientX) {
       const rect = canvas.getBoundingClientRect();
       const scaleX = viewW / rect.width;
@@ -1995,7 +2070,6 @@
       handlePointerCoord(e.clientX);
     });
 
-    // 터치 랙 방지 및 즉각 반응 리스너
     canvas.addEventListener('touchmove', (e) => {
       e.preventDefault();
       if (e.touches && e.touches.length > 0) {
@@ -2182,6 +2256,7 @@
         return;
       }
 
+      // 3초 자동 서브
       if (gameState === 'SERVE' || gameState === 'ROUND_OVER') {
         if (netMode !== 'CLIENT') {
           autoServeTimer -= dt;
