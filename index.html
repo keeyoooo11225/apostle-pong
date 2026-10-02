@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>사도 핑퐁 - Apostle Pong</title>
-  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script type="text/javascript" nonce="8da5cbfe58a741ac9078c394d37" src="//local.adguard.org?ts=1790943983650&amp;type=content-script&amp;dmn=chatgpt.com&amp;url=https%3A%2F%2Fchatgpt.com%2Fbackend-api%2Festuary%2Fcontent%3Fid%3Dfile_00000000402881fab54a993f0859bf1e%26fn%3Dapostle-pong-p2p-fixed.html%26cd%3Dattachment%26ts%3D497484%26p%3Dfs%26cid%3D1%26sig%3Df5b16d1d9466bc9db5b4e859ed76ef3adce1ae0b47abc4234e448785301a637c%26v%3D0&amp;app=chrome.exe&amp;css=2&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1"></script><script type="text/javascript" nonce="8da5cbfe58a741ac9078c394d37" src="//local.adguard.org?ts=1790943983650&amp;name=AdGuard%20Extra&amp;name=AdGuard%20Popup%20Blocker&amp;type=user-script"></script><script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <style>
     @font-face {
       font-family: 'ONEMobilePOP';
@@ -1061,7 +1061,7 @@
       document.getElementById('revengeStatusTxt').innerText = I18N[curLang].revengeWaiting;
 
       if (conn && conn.open) {
-        conn.send({ type: 'REVENGE_REQUEST' });
+        safeSend({ type: 'REVENGE_REQUEST' });
       }
     }
 
@@ -1331,6 +1331,33 @@
     let conn = null;
     let netMode = 'OFFLINE';
     let guestMouseX = viewW / 2;
+    let disconnecting = false;
+    let pendingHostStart = false;
+    let lastNetSyncTime = 0;
+    let lastInputSendTime = 0;
+    const NET_SYNC_INTERVAL = 50;   // 약 20Hz
+    const NET_INPUT_INTERVAL = 33;  // 약 30Hz
+
+    function safeSend(packet) {
+      if (!conn || !conn.open || disconnecting) return false;
+      try {
+        conn.send(packet);
+        return true;
+      } catch (e) {
+        console.warn('P2P send failed:', e);
+        return false;
+      }
+    }
+
+    function startHostMatch() {
+      if (netMode !== 'HOST' || !conn || !conn.open || !pendingHostStart) return;
+      pendingHostStart = false;
+      closeMultiModal();
+      hideRevengeModal();
+      prepareServeState();
+      startMatchIntro();
+      safeSend({ type: 'START_INTRO', hostChar: curPlayerChar, hostNick: myNickname });
+    }
 
     function openMultiModal() { document.getElementById('multiModal').style.display = 'flex'; }
     function closeMultiModal() { document.getElementById('multiModal').style.display = 'none'; }
@@ -1352,23 +1379,23 @@
       document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiConnecting;
       initPeer(() => {
         netMode = 'HOST';
+        disconnecting = false;
+        pendingHostStart = false;
         updateOpponentNameUI();
         document.getElementById('roomCodeDisplay').style.display = 'block';
         document.getElementById('myRoomId').innerText = peer.id;
         document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiWaiting;
 
         peer.on('connection', (c) => {
+          // 한 방에는 한 명만 허용
+          if (conn && conn.open) {
+            try { c.close(); } catch (e) {}
+            return;
+          }
           conn = c;
+          pendingHostStart = true;
           setupConnHandlers();
           document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiGuestConnected;
-          
-          // 게스트 접속 시 양측 모달 닫기 및 인트로 동기화 신호 전송
-          setTimeout(() => {
-            closeMultiModal();
-            prepareServeState();
-            startMatchIntro();
-            if (conn && conn.open) conn.send({ type: 'START_INTRO', hostChar: curPlayerChar, hostNick: myNickname });
-          }, 500);
         });
       });
     }
@@ -1391,14 +1418,14 @@
     function setupConnHandlers() {
       conn.on('open', () => {
         document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiConnected;
-        conn.send({ type: 'NICKNAME', name: myNickname });
-        conn.send({ type: 'CHAR', char: curPlayerChar });
+        safeSend({ type: 'NICKNAME', name: myNickname });
+        safeSend({ type: 'CHAR', char: curPlayerChar });
 
-        // 게스트(참가자) 측에서 연결 성공 시 자동으로 멀티 모달 창 닫기
-        if (netMode === 'CLIENT') {
-          setTimeout(() => {
-            closeMultiModal();
-          }, 300);
+        if (netMode === 'HOST') {
+          // 실제 DataConnection이 OPEN 된 뒤에만 게임을 시작한다.
+          setTimeout(startHostMatch, 200);
+        } else if (netMode === 'CLIENT') {
+          setTimeout(() => closeMultiModal(), 300);
         }
       });
 
@@ -1434,7 +1461,7 @@
             if (netMode === 'HOST') {
               prepareServeState();
               startMatchIntro();
-              conn.send({ type: 'START_INTRO', hostChar: curPlayerChar, hostNick: myNickname });
+              safeSend({ type: 'START_INTRO', hostChar: curPlayerChar, hostNick: myNickname });
             }
           } else {
             document.getElementById('revengeStatusTxt').innerText = '상대방이 리벤지를 신청했습니다!';
@@ -1446,9 +1473,9 @@
           handleHostSyncPacket(data);
         } else if (netMode === 'HOST') {
           if (data.type === 'INPUT') {
-            guestMouseX = data.mouseX;
+            if (Number.isFinite(data.mouseX)) guestMouseX = data.mouseX;
           } else if (data.type === 'SERVE_TRIGGER') {
-            triggerServeFromClient();
+            if (gameState === 'SERVE' || gameState === 'ROUND_OVER') handleServeOrReset();
           }
         }
       });
@@ -1459,6 +1486,7 @@
     }
 
     function handlePeerDisconnected() {
+      if (disconnecting) return;
       const msg = I18N[curLang].multiClosed;
       hideRevengeModal();
       disconnectMulti(false);
@@ -1466,16 +1494,19 @@
     }
 
     window.addEventListener('beforeunload', () => {
-      if (conn && conn.open) {
-        conn.close();
-      }
+      disconnecting = true;
+      try { if (conn && conn.open) conn.close(); } catch (e) {}
+      try { if (peer && !peer.destroyed) peer.destroy(); } catch (e) {}
     });
 
     function disconnectMulti(manual = false) {
-      if (conn) conn.close();
-      if (peer) peer.destroy();
-      peer = null;
+      if (disconnecting && !manual) return;
+      disconnecting = true;
+      pendingHostStart = false;
+      const oldConn = conn;
+      const oldPeer = peer;
       conn = null;
+      peer = null;
       netMode = 'OFFLINE';
       opponentNickname = 'AI';
       updateOpponentNameUI();
@@ -1484,7 +1515,10 @@
       document.getElementById('multiStatusTxt').innerText = '';
       if (manual) closeMultiModal();
       hideRevengeModal();
+      try { if (oldConn && oldConn.open) oldConn.close(); } catch (e) {}
+      try { if (oldPeer && !oldPeer.destroyed) oldPeer.destroy(); } catch (e) {}
       prepareServeState();
+      setTimeout(() => { disconnecting = false; }, 0);
     }
 
     function handleHostSyncPacket(pkt) {
@@ -2059,7 +2093,11 @@
       if (player.x + player.w > viewW - 15) player.x = viewW - 15 - player.w;
 
       if (netMode === 'CLIENT' && conn && conn.open) {
-        conn.send({ type: 'INPUT', mouseX: viewW - mouseX });
+        const now = performance.now();
+        if (now - lastInputSendTime >= NET_INPUT_INTERVAL) {
+          lastInputSendTime = now;
+          safeSend({ type: 'INPUT', mouseX: viewW - mouseX });
+        }
       }
     });
 
@@ -2115,7 +2153,7 @@
       applyTheme(curPlayerChar);
       updateCharMiniAvatars();
       if (conn && conn.open) {
-        conn.send({ type: 'CHAR', char: curPlayerChar });
+        safeSend({ type: 'CHAR', char: curPlayerChar });
       }
     }
 
@@ -2464,7 +2502,10 @@
         }
 
         if (netMode === 'HOST' && conn && conn.open) {
-          conn.send({
+          const nowNet = performance.now();
+          if (nowNet - lastNetSyncTime >= NET_SYNC_INTERVAL) {
+            lastNetSyncTime = nowNet;
+            safeSend({
             hostScore: playerScore,
             guestScore: aiScore,
             hostPaddleX: player.x,
@@ -2478,7 +2519,8 @@
             gameState: gameState,
             autoServeTimer: autoServeTimer,
             matchWinner: matchWinner
-          });
+            });
+          }
         }
       }
 
