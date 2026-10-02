@@ -140,8 +140,6 @@
       border: 2.5px solid var(--theme-main);
       border-radius: 18px;
       cursor: none;
-      -ms-interpolation-mode: nearest-neighbor;
-      image-rendering: -webkit-optimize-contrast;
       image-rendering: pixelated;
       image-rendering: crisp-edges;
       touch-action: none;
@@ -202,8 +200,8 @@
     }
 
     .char-avatar-mini {
-      width: 26px;
-      height: 26px;
+      width: 25px;
+      height: 25px;
       border-radius: 50%;
       border: 1.5px solid var(--theme-border);
       background: #ffffff;
@@ -235,10 +233,10 @@
       display: none;
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.55);
+      background: rgba(0, 0, 0, 0.6);
       align-items: center;
       justify-content: center;
-      z-index: 100;
+      z-index: 1000;
       padding: 16px;
     }
 
@@ -252,7 +250,7 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
       font-family: var(--app-font);
     }
 
@@ -379,7 +377,7 @@
         <span><img src="item_yellow.png" class="item-guide-icon" alt="pink"><span id="guideYellow">분홍캔: 가드 확대</span></span>
         <span><img src="item_green.png" class="item-guide-icon" alt="blue"><span id="guideGreen">하늘캔: 가드 축소</span></span>
         <span><img src="item_purple.png" class="item-guide-icon" alt="star"><span id="guidePurple">별사탕: 공 복제</span></span>
-        <span><img src="item_macaron.png" class="item-guide-icon" alt="macaron"><span id="guideMacaron">모카롱: 슬라임 범퍼</span></span>
+        <span><img src="item_macaron.png" class="item-guide-icon" alt="macaron" onerror="this.src='item_yellow.png'"><span id="guideMacaron">모카롱: 슬라임 범퍼</span></span>
       </div>
 
       <div class="char-select-row" id="charSelectRow">
@@ -661,7 +659,7 @@
         introCountdown: "게임 시작까지 {sec}초...",
         winFinal: "승리했습니다! 🎉",
         loseFinal: "패배했습니다... 💧",
-        revengeBtn: "⚔️️ 리벤지 (다시 하기)",
+        revengeBtn: "⚔️ 리벤지 (다시 하기)",
         revengeAcceptBtn: "⚔️ 리벤지 수락하기!",
         cancelBtn: "🚪 나가기 (취소)",
         revengeAsk: "다시 한 판 승부를 겨루시겠습니까?",
@@ -711,7 +709,7 @@
         diffSetPrefix: "難易度: ",
         guideYellow: "ピンク缶: ガード拡大",
         guideGreen: "ブルー缶: ガード縮小",
-        guidePurple: "スターキャンディ: ボール分裂",
+        guidePurple: "スターキャン디: ボール分裂",
         guideMacaron: "モカロン: スライムバンパー",
         controlGuide: "試合開始前に使徒を選択してください！試合中は変更できません(10点先取)。",
         lblPlayerSelect: "自使徒:",
@@ -723,7 +721,7 @@
         multiBall: "⭐ マルチボール！",
         slimeSpawn: "🍮 スライムミミック出現！",
         droneWarning: "⚠ ドローン接近！",
-        hitPlayer: "ナ이스リターン！",
+        hitPlayer: "ナイスリターン！",
         blockAi: "AIブロック！",
         blockOpponent: "相手ブロック！",
         serveAuto: "サーブまで {sec}秒...",
@@ -731,7 +729,7 @@
         introCountdown: "試合開始まで {sec}秒...",
         winFinal: "勝利しました！🎉",
         loseFinal: "敗北しました... 💧",
-        revengeBtn: "⚔️ 再戦する (リ벤지)",
+        revengeBtn: "⚔️ 再戦する (リベンジ)",
         revengeAcceptBtn: "⚔️ 再戦を受ける！",
         cancelBtn: "🚪 終了 (キャンセル)",
         revengeAsk: "もう一勝負しますか？",
@@ -936,7 +934,6 @@
 
     function confirmInitialSetup() {
       document.getElementById('initModal').style.display = 'none';
-      resumeGameFromModal();
       prepareServeState();
       startMatchIntro();
     }
@@ -1383,7 +1380,7 @@
     function joinRoom() {
       const code = document.getElementById('joinRoomInput').value.trim();
       if (!code) { 
-        alert(curLang === 'ko' ? '방 코드를 입력해주세요!' : (curLang === 'ja' ? '코드を入力してください！' : 'Please enter room code!')); 
+        alert(curLang === 'ko' ? '방 코드를 입력해주세요!' : (curLang === 'ja' ? 'コードを入力してください！' : 'Please enter room code!')); 
         return; 
       }
       document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiConnectingHost;
@@ -2045,7 +2042,7 @@
         this.x = x; this.y = y; this.text = text; this.color = color;
         this.life = 45;
       }
-      update(dt) { this.y -= 1.0 * dt; this.life -= dt; }
+      update(dt) { this.life -= dt; this.life = Math.max(0, this.life); }
       draw() {
         ctx.fillStyle = this.color;
         ctx.font = `15px ${I18N[curLang].fontFamily}`;
@@ -2254,11 +2251,15 @@
       });
     }
 
+    // =============================================================
+    // 메인 루프 (일시정지 완벽 연동)
+    // =============================================================
     let lastTime = performance.now();
 
     function loop(currentTime) {
       const elapsed = currentTime - lastTime;
       lastTime = currentTime;
+      
       const dt = isGamePaused ? 0 : (Math.min(elapsed / 16.666, 3.0) || 1.0);
 
       let shakeOffsetX = 0;
@@ -2284,7 +2285,7 @@
         return;
       }
 
-      // 3초 자동 서브 카운트다운
+      // 3초 자동 서브
       if ((gameState === 'SERVE' || gameState === 'ROUND_OVER') && !isGamePaused) {
         if (netMode !== 'CLIENT') {
           autoServeTimer -= dt;
@@ -2611,8 +2612,8 @@
     prepareServeState();
     updateCharMiniAvatars();
 
+    // 초기 시작 모달 팝업 표시
     document.getElementById('initModal').style.display = 'flex';
-    pauseGameForModal();
 
     requestAnimationFrame((t) => { lastTime = t; loop(t); });
   </script>
