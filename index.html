@@ -631,23 +631,6 @@
   </div>
 
   <script>
-    // 호환성 방어 코드 (모바일/인앱 브라우저에서 ctx.roundRect 에러 발생 방지)
-    function drawSafeRoundRect(context, x, y, width, height, radius) {
-      if (typeof context.roundRect === 'function') {
-        context.roundRect(x, y, width, height, radius);
-      } else {
-        context.moveTo(x + radius, y);
-        context.lineTo(x + width - radius, y);
-        context.quadraticCurveTo(x + width, y, x + width, y + radius);
-        context.lineTo(x + width, y + height - radius);
-        context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-        context.lineTo(x + radius, y + height);
-        context.quadraticCurveTo(x, y + height, x, y + height - radius);
-        context.lineTo(x, y + radius);
-        context.quadraticCurveTo(x, y, x + radius, y);
-      }
-    }
-
     const canvas = document.getElementById('pongCanvas');
     const ctx = canvas.getContext('2d');
     const gameFrame = document.getElementById('gameFrame');
@@ -734,7 +717,7 @@
         introCountdown: "게임 시작까지 {sec}초...",
         winFinal: "승리했습니다! 🎉",
         loseFinal: "패배했습니다... 💧",
-        revengeBtn: "⚔️️ 리벤지 (다시 하기)",
+        revengeBtn: "⚔️ 리벤지 (다시 하기)",
         cancelBtn: "🚪 나가기 (취소)",
         revengeAsk: "다시 한 판 승부를 겨루시겠습니까?",
         revengeWaiting: "상대방의 리벤지 수락을 기다리는 중...",
@@ -837,9 +820,6 @@
         initLang: "Language",
         initChar: "Choose your Apostle!",
         initStartBtn: "Start Match 🚀",
-        patchTitle: "🔔 Patch Notes",
-        patchDesc: "Ner and Daya are not implemented yet.",
-        creditHtml: "Pixel Art: KEEYO(キヨ)<br>Code generated with AI. All Apostle copyrights belong to EPID Games.",
         nicknameTitle: "Player Nickname",
         saveNickBtn: "Save",
         nickSavedPrefix: "Saved Nickname",
@@ -1216,7 +1196,7 @@
       ctx.save();
       ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
       ctx.beginPath();
-      drawSafeRoundRect(ctx, 24 + leftOffset, centerY + 36, viewW / 2 - 38, 48, 12);
+      ctx.roundRect(24 + leftOffset, centerY + 36, viewW / 2 - 38, 48, 12);
       ctx.fill();
       ctx.strokeStyle = '#22c55e';
       ctx.lineWidth = 2.5;
@@ -1250,7 +1230,7 @@
 
       ctx.fillStyle = '#ef4444';
       ctx.beginPath();
-      drawSafeRoundRect(ctx, 28 + leftOffset, centerY + 87, 76, 18, 8);
+      ctx.roundRect(28 + leftOffset, centerY + 87, 76, 18, 8);
       ctx.fill();
       ctx.fillStyle = '#ffffff';
       ctx.font = `bold 10px ${I18N[curLang].fontFamily}`;
@@ -1261,7 +1241,7 @@
       ctx.save();
       ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
       ctx.beginPath();
-      drawSafeRoundRect(ctx, viewW / 2 + 14 + rightOffset, centerY + 36, viewW / 2 - 38, 48, 12);
+      ctx.roundRect(viewW / 2 + 14 + rightOffset, centerY + 36, viewW / 2 - 38, 48, 12);
       ctx.fill();
       ctx.strokeStyle = '#f97316';
       ctx.lineWidth = 2.5;
@@ -1331,7 +1311,7 @@
         ctx.save();
         ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
         ctx.beginPath();
-        drawSafeRoundRect(ctx, viewW / 2 - 105, viewH - 65, 210, 36, 18);
+        ctx.roundRect(viewW / 2 - 105, viewH - 65, 210, 36, 18);
         ctx.fill();
         ctx.fillStyle = '#ffffff';
         ctx.font = `bold 14px ${I18N[curLang].fontFamily}`;
@@ -1342,7 +1322,7 @@
     }
 
     // =============================================================
-    // P2P 멀티플레이 통신 엔진
+    // P2P 멀티플레이 통신 엔진 (순정 원본 구조)
     // =============================================================
     let peer = null;
     let conn = null;
@@ -1408,12 +1388,6 @@
         document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiConnected;
         conn.send({ type: 'NICKNAME', name: myNickname });
         conn.send({ type: 'CHAR', char: curPlayerChar });
-
-        if (netMode === 'CLIENT') {
-          setTimeout(() => {
-            closeMultiModal();
-          }, 300);
-        }
       });
 
       conn.on('data', (data) => {
@@ -1460,7 +1434,7 @@
           handleHostSyncPacket(data);
         } else if (netMode === 'HOST') {
           if (data.type === 'INPUT') {
-            if (Number.isFinite(data.mouseX)) guestMouseX = data.mouseX;
+            guestMouseX = data.mouseX;
           } else if (data.type === 'SERVE_TRIGGER') {
             triggerServeFromClient();
           }
@@ -1563,42 +1537,6 @@
       if (pkt.sfx) playSound(pkt.sfx);
       if (pkt.shake) triggerScreenShake(pkt.shake);
     }
-
-    // =============================================================
-    // 포인터 좌표 입력 처리 보강
-    // =============================================================
-    function handlePointerCoord(clientX) {
-      const rect = canvas.getBoundingClientRect();
-      if (!rect.width) return;
-      const scaleX = viewW / rect.width;
-      const mouseX = (clientX - rect.left) * scaleX;
-      
-      player.x = mouseX - player.w / 2;
-      if (player.x < 15) player.x = 15;
-      if (player.x + player.w > viewW - 15) player.x = viewW - 15 - player.w;
-
-      if (netMode === 'CLIENT' && conn && conn.open) {
-        conn.send({ type: 'INPUT', mouseX: viewW - player.x - player.w / 2 });
-      }
-    }
-
-    canvas.addEventListener('pointermove', (e) => {
-      handlePointerCoord(e.clientX);
-    });
-
-    canvas.addEventListener('touchmove', (e) => {
-      e.preventDefault();
-      if (e.touches && e.touches.length > 0) {
-        handlePointerCoord(e.touches[0].clientX);
-      }
-    }, { passive: false });
-
-    canvas.addEventListener('touchstart', (e) => {
-      ensureAudioUnlocked();
-      if (e.touches && e.touches.length > 0) {
-        handlePointerCoord(e.touches[0].clientX);
-      }
-    }, { passive: false });
 
     // =============================================================
     // BGM & SFX 엔진
@@ -2100,7 +2038,170 @@
       if (ai.x + ai.w > viewW - 15) ai.x = viewW - 15 - ai.w;
     }
 
-    // 메인 게임 루프 (호환성 방어 및 강제 동기화)
+    canvas.addEventListener('pointermove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      
+      player.x = mouseX - player.w / 2;
+      if (player.x < 15) player.x = 15;
+      if (player.x + player.w > viewW - 15) player.x = viewW - 15 - player.w;
+
+      if (netMode === 'CLIENT' && conn && conn.open) {
+        conn.send({ type: 'INPUT', mouseX: viewW - mouseX });
+      }
+    });
+
+    canvas.addEventListener('pointerdown', () => {
+      ensureAudioUnlocked();
+      if (!currentBgmNode && bgmVolume > 0 && gameState !== 'MATCH_INTRO' && gameState !== 'MATCH_OVER') {
+        startCleanChiptuneBgm();
+      }
+    });
+
+    function triggerServeFromClient() {
+      handleServeOrReset();
+    }
+
+    function prepareServeState() {
+      stopBgm();
+      gameState = 'SERVE';
+      autoServeTimer = 180;
+      playerScore = 0;
+      aiScore = 0;
+      matchWinner = null;
+      setPaddleLevel(player, 0);
+      setPaddleLevel(ai, 0);
+      slimeBumpers = [];
+      fieldItems = [];
+      balls = [];
+      activeDrone = null;
+      updateScoreUI();
+      updateOpponentNameUI();
+      updateCharMiniAvatars();
+      updateCharSelectLockState();
+    }
+
+    function handleServeOrReset() {
+      if (gameState === 'SERVE' || gameState === 'ROUND_OVER') {
+        gameState = 'PLAYING';
+        updateCharSelectLockState();
+        if (bgmVolume > 0 && !currentBgmNode) {
+          startCleanChiptuneBgm();
+        }
+        resetBalls('player');
+      }
+    }
+
+    function updateScoreUI() {
+      document.getElementById('pScoreTxt').innerText = playerScore;
+      document.getElementById('aiScoreTxt').innerText = aiScore;
+    }
+
+    function changePlayerChar(val) {
+      if (gameState === 'PLAYING' || gameState === 'ROUND_OVER' || gameState === 'MATCH_INTRO' || gameState === 'MATCH_OVER') return;
+      curPlayerChar = val;
+      applyTheme(curPlayerChar);
+      updateCharMiniAvatars();
+      if (conn && conn.open) {
+        conn.send({ type: 'CHAR', char: curPlayerChar });
+      }
+    }
+
+    function changeAiChar(val) {
+      if (gameState === 'PLAYING' || gameState === 'ROUND_OVER' || gameState === 'MATCH_INTRO' || gameState === 'MATCH_OVER') return;
+      curAiChar = val;
+      updateCharMiniAvatars();
+    }
+
+    function openSettings() { document.getElementById('settingsModal').style.display = 'flex'; }
+    function closeSettings() { document.getElementById('settingsModal').style.display = 'none'; }
+
+    function openPatchModal() { document.getElementById('patchModal').style.display = 'flex'; }
+    function closePatchModal() { document.getElementById('patchModal').style.display = 'none'; }
+
+    function setDifficulty(diff) {
+      curDifficulty = diff;
+      ai.speed = DIFF_CONFIG[curDifficulty].aiSpeed;
+      ['Easy', 'Normal', 'Hard'].forEach(d => {
+        document.getElementById('btnDiff' + d).classList.toggle('active', curDifficulty.toLowerCase() === d.toLowerCase());
+      });
+      popups.push(new PopupText(viewW / 2, viewH / 2 - 20, `${I18N[curLang].diffSetPrefix}${I18N[curLang].diffNames[diff]}`, THEMES[curPlayerChar].dark));
+    }
+
+    function setLanguage(lang) {
+      curLang = lang;
+      const dict = I18N[curLang];
+
+      document.documentElement.style.setProperty('--app-font', dict.fontFamily);
+      document.getElementById('titleTxt').innerText = dict.title;
+      document.getElementById('modalHeader').innerText = dict.settings;
+      document.getElementById('initModalTitle').innerText = dict.initTitle;
+      document.getElementById('lblInitLang').innerText = dict.initLang;
+      document.getElementById('lblInitChar').innerText = dict.initChar;
+      document.getElementById('btnConfirmStart').innerText = dict.initStartBtn;
+      document.getElementById('patchModalTitle').innerText = dict.patchTitle;
+      document.getElementById('patchTextItem').innerText = dict.patchDesc;
+      document.getElementById('creditFooter').innerHTML = dict.creditHtml;
+
+      document.getElementById('lblNicknameTitle').innerText = dict.nicknameTitle;
+      document.getElementById('btnSaveNickname').innerText = dict.saveNickBtn;
+      document.getElementById('lblBgm').innerText = dict.bgm;
+      document.getElementById('lblBgmLoop').innerText = dict.bgmLoopLabel;
+      document.getElementById('btnBgmOnce').innerText = dict.bgmOnce;
+      document.getElementById('btnBgmLoop').innerText = dict.bgmRepeat;
+      document.getElementById('lblSfx').innerText = dict.sfx;
+      document.getElementById('lblDifficulty').innerText = dict.difficulty;
+      document.getElementById('lblLang').innerText = dict.language;
+
+      document.getElementById('btnDiffEasy').innerText = dict.diffNames.easy;
+      document.getElementById('btnDiffNormal').innerText = dict.diffNames.normal;
+      document.getElementById('btnDiffHard').innerText = dict.diffNames.hard;
+
+      document.getElementById('guideYellow').innerText = dict.guideYellow;
+      document.getElementById('guideGreen').innerText = dict.guideGreen;
+      document.getElementById('guidePurple').innerText = dict.guidePurple;
+      document.getElementById('guideMacaron').innerText = dict.guideMacaron;
+      document.getElementById('bottomControlGuide').innerText = dict.controlGuide;
+
+      document.getElementById('lblPlayer').innerText = dict.lblPlayerSelect;
+      document.getElementById('lblAi').innerText = dict.lblAiSelect;
+
+      document.getElementById('multiModalTitle').innerText = dict.multiTitle;
+      document.getElementById('multiDescTxt').innerText = dict.multiDesc;
+      document.getElementById('multiHostTitle').innerText = dict.multiHost;
+      document.getElementById('btnCreateRoom').innerText = dict.multiCreateBtn;
+      document.getElementById('lblMyRoomCode').innerText = dict.multiMyCode;
+      document.getElementById('lblTellFriend').innerText = dict.multiTellFriend;
+      document.getElementById('multiGuestTitle').innerText = dict.multiGuest;
+      document.getElementById('joinRoomInput').placeholder = dict.multiInputPlaceholder;
+      document.getElementById('btnJoinRoom').innerText = dict.multiJoinBtn;
+      document.getElementById('btnBackToAi').innerText = dict.multiBackAi;
+
+      document.getElementById('btnRevengeAction').innerText = dict.revengeBtn;
+      document.getElementById('btnCancelAction').innerText = dict.cancelBtn;
+      document.getElementById('matchResultSub').innerText = dict.revengeAsk;
+
+      updateOpponentNameUI();
+
+      const pSelect = document.getElementById('playerCharSelect');
+      const aSelect = document.getElementById('aiCharSelect');
+      for (let opt of pSelect.options) opt.text = dict.chars[opt.value];
+      for (let opt of aSelect.options) opt.text = dict.chars[opt.value];
+
+      ['butter', 'rim', 'ner', 'aya', 'daya'].forEach(k => {
+        const span = document.getElementById(`txtPick_${k}`);
+        if (span) span.innerText = dict.chars[k];
+      });
+
+      ['Ko', 'Ja', 'En'].forEach(l => {
+        document.getElementById('btnLang' + l).classList.toggle('active', curLang.toLowerCase() === l.toLowerCase());
+        document.getElementById('btnInit' + l).classList.toggle('active', curLang.toLowerCase() === l.toLowerCase());
+      });
+    }
+
+    // =============================================================
+    // 메인 루프 (자동 서브 & 인트로 연출 지원)
+    // =============================================================
     let lastTime = performance.now();
 
     function loop(currentTime) {
@@ -2122,7 +2223,8 @@
 
       ctx.save();
       ctx.scale(dpr, dpr);
-      ctx.imageSmoothingEnabled = false;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
 
       if (gameState === 'MATCH_INTRO') {
         drawMatchIntro(dt);
@@ -2447,7 +2549,6 @@
     prepareServeState();
     updateCharMiniAvatars();
 
-    // 초기 실행 시 모달이 확실히 열리도록 설정
     document.getElementById('initModal').style.display = 'flex';
     requestAnimationFrame((t) => { lastTime = t; loop(t); });
   </script>
