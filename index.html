@@ -451,7 +451,7 @@
   </div>
 
   <!-- [초기 진입 모달] -->
-  <div class="modal-overlay" id="initModal" style="display: flex;">
+  <div class="modal-overlay" id="initModal">
     <div class="modal-box">
       <div class="modal-title">
         <span id="initModalTitle">✨ 시작 설정</span>
@@ -1325,7 +1325,7 @@
     }
 
     // =============================================================
-    // P2P 멀티플레이 통신 엔진 (안정화 버전)
+    // P2P 멀티플레이 통신 엔진
     // =============================================================
     let peer = null;
     let conn = null;
@@ -2083,7 +2083,7 @@
       if (ai.x + ai.w > viewW - 15) ai.x = viewW - 15 - ai.w;
     }
 
-    // 메인 게임 루프 (초기 화면 멈춤 방지 및 렌더링 강제 보장)
+    // 메인 게임 루프 (방어 코드 및 렌더링 강제 유지)
     let lastTime = performance.now();
 
     function loop(currentTime) {
@@ -2430,7 +2430,7 @@
     prepareServeState();
     updateCharMiniAvatars();
 
-    // 초기 실행 시 모달이 확실히 뜨도록 강제 오픈
+    // 초기 실행 시 모달이 확실히 열리도록 설정
     document.getElementById('initModal').style.display = 'flex';
     requestAnimationFrame((t) => { lastTime = t; loop(t); });
   </script>
