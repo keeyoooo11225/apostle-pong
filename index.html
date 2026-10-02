@@ -410,7 +410,7 @@
         <span><img src="item_yellow.png" class="item-guide-icon" alt="pink"><span id="guideYellow">분홍캔: 가드 확대</span></span>
         <span><img src="item_green.png" class="item-guide-icon" alt="blue"><span id="guideGreen">하늘캔: 가드 축소</span></span>
         <span><img src="item_purple.png" class="item-guide-icon" alt="star"><span id="guidePurple">별사탕: 공 복제</span></span>
-        <span><img src="item_macaron.png" class="item-guide-icon" alt="macaron" onerror="this.src='item_yellow.png'"><span id="guideMacaron">모카롱: 슬라임 범퍼</span></span>
+        <span><img id="guideMacaronImg" src="item_macaron.png" class="item-guide-icon" alt="macaron"><span id="guideMacaron">모카롱: 슬라임 범퍼</span></span>
       </div>
 
       <div class="char-select-row" id="charSelectRow">
@@ -498,7 +498,7 @@
     </div>
   </div>
 
-  <!-- [패치내역 모달 (벨 모양) - 요청사항 반영] -->
+  <!-- [패치내역 모달] -->
   <div class="modal-overlay" id="patchModal">
     <div class="modal-box">
       <div class="modal-title">
@@ -962,14 +962,38 @@
       }
     }
 
+    function loadSmartImage(assetKey, candidates) {
+      const asset = ASSETS[assetKey];
+      let idx = 0;
+      function tryNext() {
+        if (idx >= candidates.length) return;
+        const testImg = new Image();
+        testImg.src = candidates[idx++];
+        testImg.onload = () => {
+          asset.img = testImg;
+          asset.upscaled = createUpscaledCanvas(testImg, 4);
+          if (assetKey === 'item_macaron') {
+            const el = document.getElementById('guideMacaronImg');
+            if (el) el.src = testImg.src;
+          }
+        };
+        testImg.onerror = tryNext;
+      }
+      tryNext();
+    }
+
     Object.keys(ASSETS).forEach(k => {
-      const asset = ASSETS[k];
-      const img = new Image();
-      img.src = asset.src;
-      img.onload = () => { 
-        asset.img = img;
-        asset.upscaled = createUpscaledCanvas(img, 4);
-      };
+      if (k === 'item_macaron') {
+        loadSmartImage('item_macaron', ['item_macaron.png', 'Item_macaron.png', 'item_macaron.PNG', 'Item_Macaron.png']);
+      } else {
+        const asset = ASSETS[k];
+        const img = new Image();
+        img.src = asset.src;
+        img.onload = () => { 
+          asset.img = img;
+          asset.upscaled = createUpscaledCanvas(img, 4);
+        };
+      }
     });
 
     const CHAR_FACES = {
@@ -1000,6 +1024,8 @@
 
     function confirmInitialSetup() {
       document.getElementById('initModal').style.display = 'none';
+      isGamePaused = false;
+      lastTime = performance.now();
       prepareServeState();
       startMatchIntro();
     }
@@ -1089,7 +1115,7 @@
     }
 
     // =============================================================
-    // [모달 일시정지(PAUSE) 연동]
+    // [모달 일시정지(PAUSE) 연동 - 모드 무관 일시정지 해제 보장]
     // =============================================================
     let isGamePaused = false;
     let savedStateBeforePause = null;
@@ -1107,16 +1133,14 @@
     }
 
     function resumeGameFromModal() {
-      if (netMode === 'OFFLINE') {
-        isGamePaused = false;
-        if (savedStateBeforePause) {
-          gameState = savedStateBeforePause;
-          savedStateBeforePause = null;
-        }
-        lastTime = performance.now();
-        if (audioCtx && audioCtx.state === 'suspended') {
-          audioCtx.resume();
-        }
+      isGamePaused = false; // 멀티/오프라인 무관하게 무조건 일시정지 해제!
+      if (savedStateBeforePause) {
+        gameState = savedStateBeforePause;
+        savedStateBeforePause = null;
+      }
+      lastTime = performance.now();
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
       }
     }
 
@@ -1150,6 +1174,23 @@
       resumeGameFromModal();
     }
 
+    // 호환성 둥근 사각형 도우미
+    function drawSafeRoundRect(context, x, y, width, height, radius) {
+      if (typeof context.roundRect === 'function') {
+        context.roundRect(x, y, width, height, radius);
+      } else {
+        context.moveTo(x + radius, y);
+        context.lineTo(x + width - radius, y);
+        context.quadraticCurveTo(x + width, y, x + width, y + radius);
+        context.lineTo(x + width, y + height - radius);
+        context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        context.lineTo(x + radius, y + height);
+        context.quadraticCurveTo(x, y + height, x, y + height - radius);
+        context.lineTo(x, y + radius);
+        context.quadraticCurveTo(x, y, x + radius, y);
+      }
+    }
+
     // =============================================================
     // [양측 배너 충돌 + 5초 대기 인트로 연출 모듈]
     // =============================================================
@@ -1163,6 +1204,8 @@
       gameState = 'MATCH_INTRO';
       matchIntroTimer = MATCH_INTRO_DURATION;
       hasClashed = false;
+      isGamePaused = false;
+      lastTime = performance.now();
       updateCharSelectLockState();
     }
 
@@ -1175,7 +1218,7 @@
         return;
       }
 
-      const elapsed = MATCH_INTRO_DURATION - matchIntroTimer;
+      const elapsed = Math.max(0, MATCH_INTRO_DURATION - matchIntroTimer);
       const slideProg = Math.min(1.0, elapsed / SLIDE_DURATION);
 
       const c1 = 1.70158;
@@ -1242,8 +1285,8 @@
       ctx.fillText((netMode !== 'OFFLINE' ? '2P PLAYER' : 'AI BOT'), card2X + 12, centerY - cardH / 2 + 21);
       ctx.restore();
 
-      const introHop1 = Math.abs(Math.sin((MATCH_INTRO_DURATION - matchIntroTimer) * 0.18)) * 14;
-      const introHop2 = Math.abs(Math.sin((MATCH_INTRO_DURATION - matchIntroTimer) * 0.18 + Math.PI / 2)) * 14;
+      const introHop1 = Math.abs(Math.sin(elapsed * 0.18)) * 14;
+      const introHop2 = Math.abs(Math.sin(elapsed * 0.18 + Math.PI / 2)) * 14;
 
       const leftCharKey = (netMode === 'CLIENT') ? curAiChar : curPlayerChar;
       const rightCharKey = (netMode === 'CLIENT') ? curPlayerChar : curAiChar;
@@ -1275,7 +1318,7 @@
       ctx.save();
       ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
       ctx.beginPath();
-      ctx.roundRect(24 + leftOffset, centerY + 36, viewW / 2 - 38, 48, 12);
+      drawSafeRoundRect(ctx, 24 + leftOffset, centerY + 36, viewW / 2 - 38, 48, 12);
       ctx.fill();
       ctx.strokeStyle = '#22c55e';
       ctx.lineWidth = 2.5;
@@ -1284,7 +1327,7 @@
       ctx.save();
       ctx.beginPath();
       ctx.arc(46 + leftOffset, centerY + 60, 16, 0, Math.PI * 2);
-      ctx.fillStyle = THEMES[leftCharKey].light;
+      ctx.fillStyle = (THEMES[leftCharKey] || THEMES.butter).light;
       ctx.fill();
       ctx.clip();
       
@@ -1309,7 +1352,7 @@
 
       ctx.fillStyle = '#ef4444';
       ctx.beginPath();
-      ctx.roundRect(28 + leftOffset, centerY + 87, 76, 18, 8);
+      drawSafeRoundRect(ctx, 28 + leftOffset, centerY + 87, 76, 18, 8);
       ctx.fill();
       ctx.fillStyle = '#ffffff';
       ctx.font = `bold 10px ${I18N[curLang].fontFamily}`;
@@ -1320,7 +1363,7 @@
       ctx.save();
       ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
       ctx.beginPath();
-      ctx.roundRect(viewW / 2 + 14 + rightOffset, centerY + 36, viewW / 2 - 38, 48, 12);
+      drawSafeRoundRect(ctx, viewW / 2 + 14 + rightOffset, centerY + 36, viewW / 2 - 38, 48, 12);
       ctx.fill();
       ctx.strokeStyle = '#f97316';
       ctx.lineWidth = 2.5;
@@ -1329,7 +1372,7 @@
       ctx.save();
       ctx.beginPath();
       ctx.arc(viewW / 2 + 36 + rightOffset, centerY + 60, 16, 0, Math.PI * 2);
-      ctx.fillStyle = THEMES[rightCharKey].light;
+      ctx.fillStyle = (THEMES[rightCharKey] || THEMES.rim).light;
       ctx.fill();
       ctx.clip();
       
@@ -1358,7 +1401,7 @@
         ctx.save();
         ctx.translate(viewW / 2, centerY - 28);
         const vsPop = Math.min(1.0, (elapsed - SLIDE_DURATION) / 10);
-        const vsPulse = vsPop * (1.0 + Math.sin((MATCH_INTRO_DURATION - matchIntroTimer) * 0.25) * 0.08);
+        const vsPulse = vsPop * (1.0 + Math.sin(elapsed * 0.25) * 0.08);
         ctx.scale(vsPulse, vsPulse);
 
         ctx.fillStyle = '#f43f5e';
@@ -1390,7 +1433,7 @@
         ctx.save();
         ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
         ctx.beginPath();
-        ctx.roundRect(viewW / 2 - 105, viewH - 65, 210, 36, 18);
+        drawSafeRoundRect(ctx, viewW / 2 - 105, viewH - 65, 210, 36, 18);
         ctx.fill();
         ctx.fillStyle = '#ffffff';
         ctx.font = `bold 14px ${I18N[curLang].fontFamily}`;
@@ -1997,11 +2040,11 @@
 
       draw() {
         ctx.save();
+        ctx.imageSmoothingEnabled = false;
         ctx.translate(Math.floor(this.x), Math.floor(this.y));
         const bAsset = ASSETS.ballItem;
         const source = bAsset.upscaled || bAsset.img;
         if (source) {
-          ctx.imageSmoothingEnabled = false;
           ctx.drawImage(source, -this.r, -this.r, this.r * 2, this.r * 2);
         } else {
           ctx.fillStyle = '#ef4444';
@@ -2035,6 +2078,7 @@
       update(dt) { this.life -= dt; this.scaleTimer += 0.1 * dt; }
       draw() {
         ctx.save();
+        ctx.imageSmoothingEnabled = false;
         const pulse = Math.sin(this.scaleTimer) * 2;
         const w = (this.r + pulse) * 2;
         const h = (this.r + pulse) * 2;
@@ -2043,7 +2087,6 @@
         const sAsset = ASSETS.slime;
         const source = sAsset.upscaled || sAsset.img;
         if (source) {
-          ctx.imageSmoothingEnabled = false;
           ctx.drawImage(source, -w / 2, -h / 2, w, h);
         } else {
           ctx.fillStyle = '#22c55e';
@@ -2100,12 +2143,12 @@
       update(dt) { this.life -= dt; this.animTimer += dt; }
       draw() {
         ctx.save();
+        ctx.imageSmoothingEnabled = false;
         const floatY = Math.sin(this.animTimer * 0.08) * 3;
         ctx.translate(Math.floor(this.x), Math.floor(this.y + floatY));
         const asset = ASSETS['item_' + this.type];
-        const source = asset.upscaled || asset.img;
+        const source = asset ? (asset.upscaled || asset.img) : null;
         if (source) {
-          ctx.imageSmoothingEnabled = false;
           ctx.drawImage(source, -this.w / 2, -this.h / 2, this.w, this.h);
         }
         ctx.restore();
@@ -2331,7 +2374,7 @@
     }
 
     // =============================================================
-    // 메인 루프
+    // 메인 루프 (초선명 픽셀 아트 렌더링 유지)
     // =============================================================
     let lastTime = performance.now();
 
