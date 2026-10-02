@@ -519,7 +519,7 @@
     <div class="modal-box">
       <div class="modal-title">
         <span id="modalHeader">환경 설정</span>
-        <button style="border:none;background:none;font-size:20px;cursor:pointer;" onclick="closeSettings()">✕</button>
+        <button style="border:none;background:none;font-size:22px;cursor:pointer;" onclick="closeSettings()">✕</button>
       </div>
 
       <div class="modal-group">
@@ -583,7 +583,7 @@
     <div class="modal-box">
       <div class="modal-title">
         <span id="multiModalTitle">🌐 1:1 P2P 멀티플레이</span>
-        <button style="border:none;background:none;font-size:20px;cursor:pointer;" onclick="closeMultiModal()">✕</button>
+        <button style="border:none;background:none;font-size:22px;cursor:pointer;" onclick="closeMultiModal()">✕</button>
       </div>
 
       <div class="modal-group">
@@ -632,7 +632,7 @@
 
   <script>
     const canvas = document.getElementById('pongCanvas');
-    const ctx = canvas.getContext('2d', { alpha: false });
+    const ctx = canvas.getContext('2d');
     const gameFrame = document.getElementById('gameFrame');
 
     const viewW = 430;
@@ -643,10 +643,11 @@
       dpr = Math.max(Math.ceil(window.devicePixelRatio || 1), 2);
       canvas.width = viewW * dpr;
       canvas.height = viewH * dpr;
+      canvas.style.width = viewW + 'px';
+      canvas.style.height = viewH + 'px';
     }
     setupCanvasDPI();
     window.addEventListener('resize', setupCanvasDPI);
-    window.addEventListener('orientationchange', () => setTimeout(setupCanvasDPI, 200));
 
     let myNickname = localStorage.getItem('pong_nickname') || '교주';
     let opponentNickname = 'AI';
@@ -717,12 +718,9 @@
         winFinal: "승리했습니다! 🎉",
         loseFinal: "패배했습니다... 💧",
         revengeBtn: "⚔️ 리벤지 (다시 하기)",
-        revengeAcceptBtn: "⚔️ 리벤지 수락하기!",
         cancelBtn: "🚪 나가기 (취소)",
         revengeAsk: "다시 한 판 승부를 겨루시겠습니까?",
         revengeWaiting: "상대방의 리벤지 수락을 기다리는 중...",
-        revengeOpponentRequested: "상대방이 리벤지를 신청했습니다!",
-        pauseText: "⏸ 일시정지 (PAUSE)",
         nextRound: "다음 세트 준비 중... ({sec}초)",
         point: "POINT!! 🎉",
         miss: "MISS... 💧",
@@ -790,12 +788,9 @@
         winFinal: "勝利しました！🎉",
         loseFinal: "敗北しました... 💧",
         revengeBtn: "⚔️ 再戦する (リベンジ)",
-        revengeAcceptBtn: "⚔️ 再戦を受ける！",
         cancelBtn: "🚪 終了 (キャンセル)",
         revengeAsk: "もう一勝負しますか？",
         revengeWaiting: "相手の再戦同意を待機中...",
-        revengeOpponentRequested: "相手から再戦の申し込みが届きました！",
-        pauseText: "⏸ 一時停止 (PAUSE)",
         nextRound: "次のセットへ準備中... ({sec}秒)",
         point: "POINT!! 🎉",
         miss: "MISS... 💧",
@@ -864,12 +859,9 @@
         winFinal: "YOU WIN! 🎉",
         loseFinal: "YOU LOSE... 💧",
         revengeBtn: "⚔️ Revenge (Rematch)",
-        revengeAcceptBtn: "⚔️ Accept Rematch!",
         cancelBtn: "🚪 Quit (Cancel)",
         revengeAsk: "Would you like a rematch?",
         revengeWaiting: "Waiting for opponent to accept...",
-        revengeOpponentRequested: "Opponent challenged you to a rematch!",
-        pauseText: "⏸ PAUSE",
         nextRound: "Next round in {sec}s...",
         point: "POINT!! 🎉",
         miss: "MISS... 💧",
@@ -930,11 +922,11 @@
       aya:    { src: 'player_aya.png', img: null, upscaled: null },
       daya:   { src: 'player_daya.png', img: null, upscaled: null },
 
-      face_butter: { src: 'butter.png', img: null, upscaled: null },
-      face_rim:    { src: 'dwqdqdsswdasdas.png', img: null, upscaled: null },
-      face_ner:    { src: 'NERU.png', img: null, upscaled: null },
-      face_aya:    { src: 'aya.png', img: null, upscaled: null },
-      face_daya:   { src: 'DAYAYA.png', img: null, upscaled: null },
+      face_butter: { src: 'butter.png', img: null, upscaled: null, dataUrl: null },
+      face_rim:    { src: 'dwqdqdsswdasdas.png', img: null, upscaled: null, dataUrl: null },
+      face_ner:    { src: 'NERU.png', img: null, upscaled: null, dataUrl: null },
+      face_aya:    { src: 'aya.png', img: null, upscaled: null, dataUrl: null },
+      face_daya:   { src: 'DAYAYA.png', img: null, upscaled: null, dataUrl: null },
 
       slime:  { src: 'slime.png', img: null, upscaled: null },
       drone:  { src: 'drone.png', img: null, upscaled: null },
@@ -945,55 +937,33 @@
       item_macaron: { src: 'item_macaron.png', img: null, upscaled: null }
     };
 
-    // 무손실 정수 픽셀(Nearest-Neighbor) 4배 업스케일러
     function createUpscaledCanvas(img, scale = 4) {
-      try {
-        const w = (img.naturalWidth || img.width || 64);
-        const h = (img.naturalHeight || img.height || 64);
-        const oc = document.createElement('canvas');
-        oc.width = w * scale;
-        oc.height = h * scale;
-        const octx = oc.getContext('2d');
-        octx.imageSmoothingEnabled = false;
-        octx.drawImage(img, 0, 0, oc.width, oc.height);
-        return oc;
-      } catch(e) {
-        return img;
-      }
-    }
-
-    function loadSmartImage(assetKey, candidates) {
-      const asset = ASSETS[assetKey];
-      let idx = 0;
-      function tryNext() {
-        if (idx >= candidates.length) return;
-        const testImg = new Image();
-        testImg.src = candidates[idx++];
-        testImg.onload = () => {
-          asset.img = testImg;
-          asset.upscaled = createUpscaledCanvas(testImg, 4);
-          if (assetKey === 'item_macaron') {
-            const el = document.getElementById('guideMacaronImg');
-            if (el) el.src = testImg.src;
-          }
-        };
-        testImg.onerror = tryNext;
-      }
-      tryNext();
+      const oc = document.createElement('canvas');
+      oc.width = img.naturalWidth * scale;
+      oc.height = img.naturalHeight * scale;
+      const octx = oc.getContext('2d');
+      octx.imageSmoothingEnabled = false;
+      octx.drawImage(img, 0, 0, oc.width, oc.height);
+      return oc;
     }
 
     Object.keys(ASSETS).forEach(k => {
-      if (k === 'item_macaron') {
-        loadSmartImage('item_macaron', ['item_macaron.png', 'Item_macaron.png', 'item_macaron.PNG', 'Item_Macaron.png']);
-      } else {
-        const asset = ASSETS[k];
-        const img = new Image();
-        img.src = asset.src;
-        img.onload = () => { 
-          asset.img = img;
-          asset.upscaled = createUpscaledCanvas(img, 4);
-        };
-      }
+      const asset = ASSETS[k];
+      const img = new Image();
+      img.src = asset.src;
+      img.onload = () => { 
+        asset.img = img;
+        const upCanvas = createUpscaledCanvas(img, 4);
+        asset.upscaled = upCanvas;
+        
+        if (k.startsWith('face_')) {
+          const charKey = k.replace('face_', '');
+          asset.dataUrl = upCanvas.toDataURL('image/png');
+          const modalImg = document.getElementById(`modalPickImg_${charKey}`);
+          if (modalImg) modalImg.src = asset.dataUrl;
+          updateCharMiniAvatars();
+        }
+      };
     });
 
     const CHAR_FACES = {
@@ -1007,8 +977,15 @@
     function updateCharMiniAvatars() {
       const pImg = document.getElementById('myAvatarMini');
       const aImg = document.getElementById('aiAvatarMini');
-      if (pImg) pImg.src = CHAR_FACES[curPlayerChar] || 'butter.png';
-      if (aImg) aImg.src = CHAR_FACES[curAiChar] || 'dwqdqdsswdasdas.png';
+      const pFaceAsset = ASSETS['face_' + curPlayerChar];
+      const aFaceAsset = ASSETS['face_' + curAiChar];
+
+      if (pImg) {
+        pImg.src = (pFaceAsset && pFaceAsset.dataUrl) ? pFaceAsset.dataUrl : (CHAR_FACES[curPlayerChar] || 'butter.png');
+      }
+      if (aImg) {
+        aImg.src = (aFaceAsset && aFaceAsset.dataUrl) ? aFaceAsset.dataUrl : (CHAR_FACES[curAiChar] || 'dwqdqdsswdasdas.png');
+      }
     }
 
     function selectInitialChar(charKey) {
@@ -1024,8 +1001,6 @@
 
     function confirmInitialSetup() {
       document.getElementById('initModal').style.display = 'none';
-      isGamePaused = false;
-      lastTime = performance.now();
       prepareServeState();
       startMatchIntro();
     }
@@ -1042,7 +1017,7 @@
       const aSelect = document.getElementById('aiCharSelect');
       const row = document.getElementById('charSelectRow');
 
-      const shouldLock = (gameState === 'PLAYING' || gameState === 'ROUND_OVER' || gameState === 'MATCH_INTRO' || gameState === 'MATCH_OVER' || isGamePaused);
+      const shouldLock = (gameState === 'PLAYING' || gameState === 'ROUND_OVER' || gameState === 'MATCH_INTRO' || gameState === 'MATCH_OVER');
       pSelect.disabled = shouldLock;
       aSelect.disabled = shouldLock || (netMode !== 'OFFLINE');
 
@@ -1054,7 +1029,6 @@
     }
 
     let revengeRequestedByMe = false;
-    let revengeRequestedByOpponent = false;
 
     function showRevengeModal(isWinner) {
       const titleElem = document.getElementById('matchResultTitle');
@@ -1066,7 +1040,6 @@
       document.getElementById('btnCancelAction').innerText = I18N[curLang].cancelBtn;
       document.getElementById('revengeStatusTxt').innerText = '';
       revengeRequestedByMe = false;
-      revengeRequestedByOpponent = false;
 
       document.getElementById('revengeModal').style.display = 'flex';
     }
@@ -1074,8 +1047,6 @@
     function hideRevengeModal() {
       document.getElementById('revengeModal').style.display = 'none';
       document.getElementById('revengeStatusTxt').innerText = '';
-      revengeRequestedByMe = false;
-      revengeRequestedByOpponent = false;
     }
 
     function onRevengeClicked() {
@@ -1087,21 +1058,10 @@
       }
 
       revengeRequestedByMe = true;
+      document.getElementById('revengeStatusTxt').innerText = I18N[curLang].revengeWaiting;
 
-      if (revengeRequestedByOpponent) {
-        hideRevengeModal();
-        if (conn && conn.open) {
-          conn.send({ type: 'REVENGE_START' });
-        }
-        prepareServeState();
-        startMatchIntro();
-      } else {
-        document.getElementById('btnRevengeAction').innerText = '⏳ 요청 중...';
-        document.getElementById('revengeStatusTxt').innerText = I18N[curLang].revengeWaiting;
-        document.getElementById('revengeStatusTxt').style.color = '#0284c7';
-        if (conn && conn.open) {
-          conn.send({ type: 'REVENGE_REQUEST' });
-        }
+      if (conn && conn.open) {
+        conn.send({ type: 'REVENGE_REQUEST' });
       }
     }
 
@@ -1111,83 +1071,6 @@
         disconnectMulti(true);
       } else {
         prepareServeState();
-      }
-    }
-
-    // =============================================================
-    // [모달 일시정지(PAUSE) 연동 - 모드 무관 일시정지 해제 보장]
-    // =============================================================
-    let isGamePaused = false;
-    let savedStateBeforePause = null;
-
-    function pauseGameForModal() {
-      if (netMode === 'OFFLINE') {
-        if (!isGamePaused) {
-          isGamePaused = true;
-          savedStateBeforePause = gameState;
-        }
-        if (audioCtx && audioCtx.state === 'running') {
-          audioCtx.suspend();
-        }
-      }
-    }
-
-    function resumeGameFromModal() {
-      isGamePaused = false; // 멀티/오프라인 무관하게 무조건 일시정지 해제!
-      if (savedStateBeforePause) {
-        gameState = savedStateBeforePause;
-        savedStateBeforePause = null;
-      }
-      lastTime = performance.now();
-      if (audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-    }
-
-    function openSettings() {
-      pauseGameForModal();
-      document.getElementById('settingsModal').style.display = 'flex';
-    }
-
-    function closeSettings() {
-      document.getElementById('settingsModal').style.display = 'none';
-      resumeGameFromModal();
-    }
-
-    function openMultiModal() {
-      pauseGameForModal();
-      document.getElementById('multiModal').style.display = 'flex';
-    }
-
-    function closeMultiModal() {
-      document.getElementById('multiModal').style.display = 'none';
-      resumeGameFromModal();
-    }
-
-    function openPatchModal() {
-      pauseGameForModal();
-      document.getElementById('patchModal').style.display = 'flex';
-    }
-
-    function closePatchModal() {
-      document.getElementById('patchModal').style.display = 'none';
-      resumeGameFromModal();
-    }
-
-    // 호환성 둥근 사각형 도우미
-    function drawSafeRoundRect(context, x, y, width, height, radius) {
-      if (typeof context.roundRect === 'function') {
-        context.roundRect(x, y, width, height, radius);
-      } else {
-        context.moveTo(x + radius, y);
-        context.lineTo(x + width - radius, y);
-        context.quadraticCurveTo(x + width, y, x + width, y + radius);
-        context.lineTo(x + width, y + height - radius);
-        context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-        context.lineTo(x + radius, y + height);
-        context.quadraticCurveTo(x, y + height, x, y + height - radius);
-        context.lineTo(x, y + radius);
-        context.quadraticCurveTo(x, y, x + radius, y);
       }
     }
 
@@ -1204,8 +1087,6 @@
       gameState = 'MATCH_INTRO';
       matchIntroTimer = MATCH_INTRO_DURATION;
       hasClashed = false;
-      isGamePaused = false;
-      lastTime = performance.now();
       updateCharSelectLockState();
     }
 
@@ -1218,7 +1099,7 @@
         return;
       }
 
-      const elapsed = Math.max(0, MATCH_INTRO_DURATION - matchIntroTimer);
+      const elapsed = MATCH_INTRO_DURATION - matchIntroTimer;
       const slideProg = Math.min(1.0, elapsed / SLIDE_DURATION);
 
       const c1 = 1.70158;
@@ -1285,8 +1166,8 @@
       ctx.fillText((netMode !== 'OFFLINE' ? '2P PLAYER' : 'AI BOT'), card2X + 12, centerY - cardH / 2 + 21);
       ctx.restore();
 
-      const introHop1 = Math.abs(Math.sin(elapsed * 0.18)) * 14;
-      const introHop2 = Math.abs(Math.sin(elapsed * 0.18 + Math.PI / 2)) * 14;
+      const introHop1 = Math.abs(Math.sin((MATCH_INTRO_DURATION - matchIntroTimer) * 0.18)) * 14;
+      const introHop2 = Math.abs(Math.sin((MATCH_INTRO_DURATION - matchIntroTimer) * 0.18 + Math.PI / 2)) * 14;
 
       const leftCharKey = (netMode === 'CLIENT') ? curAiChar : curPlayerChar;
       const rightCharKey = (netMode === 'CLIENT') ? curPlayerChar : curAiChar;
@@ -1318,7 +1199,7 @@
       ctx.save();
       ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
       ctx.beginPath();
-      drawSafeRoundRect(ctx, 24 + leftOffset, centerY + 36, viewW / 2 - 38, 48, 12);
+      ctx.roundRect(24 + leftOffset, centerY + 36, viewW / 2 - 38, 48, 12);
       ctx.fill();
       ctx.strokeStyle = '#22c55e';
       ctx.lineWidth = 2.5;
@@ -1327,7 +1208,7 @@
       ctx.save();
       ctx.beginPath();
       ctx.arc(46 + leftOffset, centerY + 60, 16, 0, Math.PI * 2);
-      ctx.fillStyle = (THEMES[leftCharKey] || THEMES.butter).light;
+      ctx.fillStyle = THEMES[leftCharKey].light;
       ctx.fill();
       ctx.clip();
       
@@ -1352,7 +1233,7 @@
 
       ctx.fillStyle = '#ef4444';
       ctx.beginPath();
-      drawSafeRoundRect(ctx, 28 + leftOffset, centerY + 87, 76, 18, 8);
+      ctx.roundRect(28 + leftOffset, centerY + 87, 76, 18, 8);
       ctx.fill();
       ctx.fillStyle = '#ffffff';
       ctx.font = `bold 10px ${I18N[curLang].fontFamily}`;
@@ -1363,7 +1244,7 @@
       ctx.save();
       ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
       ctx.beginPath();
-      drawSafeRoundRect(ctx, viewW / 2 + 14 + rightOffset, centerY + 36, viewW / 2 - 38, 48, 12);
+      ctx.roundRect(viewW / 2 + 14 + rightOffset, centerY + 36, viewW / 2 - 38, 48, 12);
       ctx.fill();
       ctx.strokeStyle = '#f97316';
       ctx.lineWidth = 2.5;
@@ -1372,7 +1253,7 @@
       ctx.save();
       ctx.beginPath();
       ctx.arc(viewW / 2 + 36 + rightOffset, centerY + 60, 16, 0, Math.PI * 2);
-      ctx.fillStyle = (THEMES[rightCharKey] || THEMES.rim).light;
+      ctx.fillStyle = THEMES[rightCharKey].light;
       ctx.fill();
       ctx.clip();
       
@@ -1401,7 +1282,7 @@
         ctx.save();
         ctx.translate(viewW / 2, centerY - 28);
         const vsPop = Math.min(1.0, (elapsed - SLIDE_DURATION) / 10);
-        const vsPulse = vsPop * (1.0 + Math.sin(elapsed * 0.25) * 0.08);
+        const vsPulse = vsPop * (1.0 + Math.sin((MATCH_INTRO_DURATION - matchIntroTimer) * 0.25) * 0.08);
         ctx.scale(vsPulse, vsPulse);
 
         ctx.fillStyle = '#f43f5e';
@@ -1433,7 +1314,7 @@
         ctx.save();
         ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
         ctx.beginPath();
-        drawSafeRoundRect(ctx, viewW / 2 - 105, viewH - 65, 210, 36, 18);
+        ctx.roundRect(viewW / 2 - 105, viewH - 65, 210, 36, 18);
         ctx.fill();
         ctx.fillStyle = '#ffffff';
         ctx.font = `bold 14px ${I18N[curLang].fontFamily}`;
@@ -1450,7 +1331,9 @@
     let conn = null;
     let netMode = 'OFFLINE';
     let guestMouseX = viewW / 2;
-    let disconnectTimeout = null;
+
+    function openMultiModal() { document.getElementById('multiModal').style.display = 'flex'; }
+    function closeMultiModal() { document.getElementById('multiModal').style.display = 'none'; }
 
     function generateRoomCode() {
       return 'TRICK-' + Math.floor(1000 + Math.random() * 9000);
@@ -1458,15 +1341,7 @@
 
     function initPeer(callback) {
       if (peer && !peer.destroyed) { callback(); return; }
-      peer = new Peer(generateRoomCode(), {
-        debug: 1,
-        config: {
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' }
-          ]
-        }
-      });
+      peer = new Peer(generateRoomCode());
       peer.on('open', () => { callback(); });
       peer.on('error', (err) => {
         document.getElementById('multiStatusTxt').innerText = 'Network error: ' + err.type;
@@ -1513,13 +1388,18 @@
 
     function setupConnHandlers() {
       conn.on('open', () => {
-        if (disconnectTimeout) {
-          clearTimeout(disconnectTimeout);
-          disconnectTimeout = null;
-        }
         document.getElementById('multiStatusTxt').innerText = I18N[curLang].multiConnected;
         conn.send({ type: 'NICKNAME', name: myNickname });
         conn.send({ type: 'CHAR', char: curPlayerChar });
+
+        // 게스트 접속 성공 시 모달 자동 닫기 및 인트로 진입 보장
+        if (netMode === 'CLIENT') {
+          setTimeout(() => {
+            closeMultiModal();
+            prepareServeState();
+            startMatchIntro();
+          }, 500);
+        }
       });
 
       conn.on('data', (data) => {
@@ -1549,17 +1429,16 @@
         }
 
         if (data.type === 'REVENGE_REQUEST') {
-          revengeRequestedByOpponent = true;
-          document.getElementById('revengeStatusTxt').innerText = I18N[curLang].revengeOpponentRequested;
-          document.getElementById('revengeStatusTxt').style.color = '#16a34a';
-          document.getElementById('btnRevengeAction').innerText = I18N[curLang].revengeAcceptBtn;
-          return;
-        }
-
-        if (data.type === 'REVENGE_START') {
-          hideRevengeModal();
-          prepareServeState();
-          startMatchIntro();
+          if (revengeRequestedByMe) {
+            hideRevengeModal();
+            if (netMode === 'HOST') {
+              prepareServeState();
+              startMatchIntro();
+              conn.send({ type: 'START_INTRO', hostChar: curPlayerChar, hostNick: myNickname });
+            }
+          } else {
+            document.getElementById('revengeStatusTxt').innerText = '상대방이 리벤지를 신청했습니다!';
+          }
           return;
         }
 
@@ -1575,13 +1454,7 @@
       });
 
       conn.on('close', () => {
-        if (document.hidden) {
-          disconnectTimeout = setTimeout(() => {
-            handlePeerDisconnected();
-          }, 20000);
-        } else {
-          handlePeerDisconnected();
-        }
+        handlePeerDisconnected();
       });
     }
 
@@ -1592,22 +1465,6 @@
       alert(msg);
     }
 
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        if (audioCtx && audioCtx.state === 'running') {
-          audioCtx.suspend();
-        }
-      } else {
-        if (disconnectTimeout) {
-          clearTimeout(disconnectTimeout);
-          disconnectTimeout = null;
-        }
-        if (!isGamePaused && audioCtx && audioCtx.state === 'suspended') {
-          audioCtx.resume();
-        }
-      }
-    });
-
     window.addEventListener('beforeunload', () => {
       if (conn && conn.open) {
         conn.close();
@@ -1615,10 +1472,6 @@
     });
 
     function disconnectMulti(manual = false) {
-      if (disconnectTimeout) {
-        clearTimeout(disconnectTimeout);
-        disconnectTimeout = null;
-      }
       if (conn) conn.close();
       if (peer) peer.destroy();
       peer = null;
@@ -1697,6 +1550,9 @@
       if (pkt.shake) triggerScreenShake(pkt.shake);
     }
 
+    // =============================================================
+    // BGM & SFX 엔진
+    // =============================================================
     let sfxVolume = 0.7;
     let bgmVolume = 0.5;
     let bgmLoopMode = false;
@@ -1711,7 +1567,7 @@
     bgmMasterGain.connect(audioCtx.destination);
 
     function ensureAudioUnlocked() {
-      if (audioCtx.state === 'suspended' && !isGamePaused) {
+      if (audioCtx.state === 'suspended') {
         audioCtx.resume();
       }
     }
@@ -2040,7 +1896,6 @@
 
       draw() {
         ctx.save();
-        ctx.imageSmoothingEnabled = false;
         ctx.translate(Math.floor(this.x), Math.floor(this.y));
         const bAsset = ASSETS.ballItem;
         const source = bAsset.upscaled || bAsset.img;
@@ -2078,7 +1933,6 @@
       update(dt) { this.life -= dt; this.scaleTimer += 0.1 * dt; }
       draw() {
         ctx.save();
-        ctx.imageSmoothingEnabled = false;
         const pulse = Math.sin(this.scaleTimer) * 2;
         const w = (this.r + pulse) * 2;
         const h = (this.r + pulse) * 2;
@@ -2122,7 +1976,6 @@
         const dAsset = ASSETS.drone;
         const source = dAsset.upscaled || dAsset.img;
         if (source) {
-          ctx.imageSmoothingEnabled = false;
           ctx.drawImage(source, -this.w / 2, -this.h / 2, this.w, this.h);
         }
         ctx.restore();
@@ -2143,11 +1996,10 @@
       update(dt) { this.life -= dt; this.animTimer += dt; }
       draw() {
         ctx.save();
-        ctx.imageSmoothingEnabled = false;
         const floatY = Math.sin(this.animTimer * 0.08) * 3;
         ctx.translate(Math.floor(this.x), Math.floor(this.y + floatY));
         const asset = ASSETS['item_' + this.type];
-        const source = asset ? (asset.upscaled || asset.img) : null;
+        const source = asset.upscaled || asset.img;
         if (source) {
           ctx.drawImage(source, -this.w / 2, -this.h / 2, this.w, this.h);
         }
@@ -2161,7 +2013,7 @@
         this.x = x; this.y = y; this.text = text; this.color = color;
         this.life = 45;
       }
-      update(dt) { this.life -= dt; this.life = Math.max(0, this.life); }
+      update(dt) { this.y -= 1.0 * dt; this.life -= dt; }
       draw() {
         ctx.fillStyle = this.color;
         ctx.font = `15px ${I18N[curLang].fontFamily}`;
@@ -2198,11 +2050,9 @@
       if (ai.x + ai.w > viewW - 15) ai.x = viewW - 15 - ai.w;
     }
 
-    function handlePointerCoord(clientX) {
-      if (isGamePaused) return;
+    canvas.addEventListener('pointermove', (e) => {
       const rect = canvas.getBoundingClientRect();
-      const scaleX = viewW / rect.width;
-      const mouseX = (clientX - rect.left) * scaleX;
+      const mouseX = e.clientX - rect.left;
       
       player.x = mouseX - player.w / 2;
       if (player.x < 15) player.x = 15;
@@ -2211,29 +2061,11 @@
       if (netMode === 'CLIENT' && conn && conn.open) {
         conn.send({ type: 'INPUT', mouseX: viewW - mouseX });
       }
-    }
-
-    canvas.addEventListener('pointermove', (e) => {
-      handlePointerCoord(e.clientX);
     });
-
-    canvas.addEventListener('touchmove', (e) => {
-      e.preventDefault();
-      if (e.touches && e.touches.length > 0) {
-        handlePointerCoord(e.touches[0].clientX);
-      }
-    }, { passive: false });
-
-    canvas.addEventListener('touchstart', (e) => {
-      ensureAudioUnlocked();
-      if (e.touches && e.touches.length > 0) {
-        handlePointerCoord(e.touches[0].clientX);
-      }
-    }, { passive: false });
 
     canvas.addEventListener('pointerdown', () => {
       ensureAudioUnlocked();
-      if (!currentBgmNode && bgmVolume > 0 && gameState !== 'MATCH_INTRO' && gameState !== 'MATCH_OVER' && !isGamePaused) {
+      if (!currentBgmNode && bgmVolume > 0 && gameState !== 'MATCH_INTRO' && gameState !== 'MATCH_OVER') {
         startCleanChiptuneBgm();
       }
     });
@@ -2293,6 +2125,9 @@
       updateCharMiniAvatars();
     }
 
+    function openSettings() { document.getElementById('settingsModal').style.display = 'flex'; }
+    function closeSettings() { document.getElementById('settingsModal').style.display = 'none'; }
+
     function setDifficulty(diff) {
       curDifficulty = diff;
       ai.speed = DIFF_CONFIG[curDifficulty].aiSpeed;
@@ -2313,9 +2148,6 @@
       document.getElementById('lblInitLang').innerText = dict.initLang;
       document.getElementById('lblInitChar').innerText = dict.initChar;
       document.getElementById('btnConfirmStart').innerText = dict.initStartBtn;
-      document.getElementById('patchModalTitle').innerText = dict.patchTitle;
-      document.getElementById('patchTextItem').innerText = dict.patchDesc;
-      document.getElementById('creditFooter').innerHTML = dict.creditHtml;
 
       document.getElementById('lblNicknameTitle').innerText = dict.nicknameTitle;
       document.getElementById('btnSaveNickname').innerText = dict.saveNickBtn;
@@ -2374,19 +2206,18 @@
     }
 
     // =============================================================
-    // 메인 루프 (초선명 픽셀 아트 렌더링 유지)
+    // 메인 루프 (자동 서브 & 인트로 연출 지원)
     // =============================================================
     let lastTime = performance.now();
 
     function loop(currentTime) {
       const elapsed = currentTime - lastTime;
       lastTime = currentTime;
-      
-      const dt = isGamePaused ? 0 : (Math.min(elapsed / 16.666, 3.0) || 1.0);
+      const dt = Math.min(elapsed / 16.666, 3.0) || 1.0;
 
       let shakeOffsetX = 0;
       let shakeOffsetY = 0;
-      if (shakeTimer > 0 && !isGamePaused) {
+      if (shakeTimer > 0) {
         shakeTimer -= dt;
         const intensity = Math.min(shakeTimer / 15, 3.5);
         shakeOffsetX = (Math.random() - 0.5) * intensity * 2;
@@ -2398,7 +2229,8 @@
 
       ctx.save();
       ctx.scale(dpr, dpr);
-      ctx.imageSmoothingEnabled = false;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
 
       if (gameState === 'MATCH_INTRO') {
         drawMatchIntro(dt);
@@ -2408,7 +2240,7 @@
       }
 
       // 3초 자동 서브
-      if ((gameState === 'SERVE' || gameState === 'ROUND_OVER') && !isGamePaused) {
+      if (gameState === 'SERVE' || gameState === 'ROUND_OVER') {
         if (netMode !== 'CLIENT') {
           autoServeTimer -= dt;
           if (autoServeTimer <= 0) {
@@ -2433,7 +2265,7 @@
       ctx.lineWidth = 4;
       ctx.strokeRect(15, 15, viewW - 30, viewH - 30);
 
-      if (netMode !== 'CLIENT' && !isGamePaused) {
+      if (netMode !== 'CLIENT') {
         if (netMode === 'HOST') {
           ai.x = guestMouseX - ai.w / 2;
           if (ai.x < 15) ai.x = 15;
@@ -2645,13 +2477,13 @@
         }
       }
 
-      const playerSpeed = isGamePaused ? 0 : Math.abs(player.x - player.lastX);
+      const playerSpeed = Math.abs(player.x - player.lastX);
       player.lastX = player.x;
       player.bounceTimer += (0.16 + playerSpeed * 0.05) * dt;
       const playerHop = Math.abs(Math.sin(player.bounceTimer)) * 9;
       const playerSquash = (playerHop < 1.5) ? 0.92 : 1.0;
 
-      const aiSpeed = isGamePaused ? 0 : Math.abs(ai.x - ai.lastX);
+      const aiSpeed = Math.abs(ai.x - ai.lastX);
       ai.lastX = ai.x;
       ai.bounceTimer += (0.16 + aiSpeed * 0.05) * dt;
       const aiHop = Math.abs(Math.sin(ai.bounceTimer)) * 9;
@@ -2714,16 +2546,6 @@
         ctx.fillText(I18N[curLang].nextRound.replace('{sec}', serveRemainingSec), viewW / 2, viewH / 2 + 35);
       }
 
-      if (isGamePaused) {
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
-        ctx.fillRect(0, 0, viewW, viewH);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = `bold 22px ${I18N[curLang].fontFamily}`;
-        ctx.textAlign = 'center';
-        ctx.fillText(I18N[curLang].pauseText, viewW / 2, viewH / 2);
-      }
-
       ctx.restore();
       requestAnimationFrame(loop);
     }
@@ -2734,7 +2556,6 @@
     updateCharMiniAvatars();
 
     document.getElementById('initModal').style.display = 'flex';
-
     requestAnimationFrame((t) => { lastTime = t; loop(t); });
   </script>
 </body>
