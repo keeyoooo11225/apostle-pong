@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>사도 핑퐁 - Apostle Pong</title>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <style>
@@ -30,36 +30,52 @@
       --app-font: 'ONEMobilePOP', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    * { box-sizing: border-box; }
+    * { 
+      box-sizing: border-box; 
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
 
-    body {
+    html, body {
       margin: 0;
-      padding: 16px 10px;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
       background-color: var(--bg-page);
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
       font-family: var(--app-font);
       font-weight: normal;
-      user-select: none;
       color: #2d3748;
-      transition: background-color 0.25s ease;
-      overflow: hidden;
+      touch-action: none;
+    }
+
+    /* 모바일 비율 자동 최적화 컨테이너 */
+    .game-scaler {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
     }
 
     .game-frame {
-      width: 480px;
+      width: 100%;
+      max-width: 440px;
+      max-height: 98dvh;
       background: #ffffff;
-      border: 5px solid var(--theme-main);
-      border-radius: 40px;
-      padding: 20px;
-      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.08);
+      border: 4px solid var(--theme-main);
+      border-radius: 28px;
+      padding: 12px 14px;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.08);
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
       position: relative;
     }
 
@@ -68,13 +84,13 @@
       justify-content: space-between;
       align-items: center;
       width: 100%;
-      padding: 0 4px;
-      gap: 8px;
+      padding: 0 2px;
+      gap: 6px;
     }
 
     .top-bar h1 {
       margin: 0;
-      font-size: 19px;
+      font-size: 16px;
       font-weight: normal;
       color: var(--theme-dark);
       white-space: nowrap;
@@ -85,71 +101,74 @@
     .top-right {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 6px;
       flex-shrink: 0;
     }
 
     .score-board {
-      font-size: 14px;
+      font-size: 12.5px;
       color: var(--theme-dark);
       display: flex;
-      gap: 6px;
+      gap: 4px;
       align-items: center;
       background: var(--theme-light);
       border: 1.5px solid var(--theme-border);
-      padding: 4px 10px;
-      border-radius: 20px;
+      padding: 3px 8px;
+      border-radius: 16px;
       white-space: nowrap;
     }
 
     .score-board b {
-      font-size: 16px;
+      font-size: 14.5px;
       color: #0f172a;
     }
 
     .gear-btn, .net-btn {
       background: none;
       border: none;
-      font-size: 20px;
+      font-size: 18px;
       cursor: pointer;
       line-height: 1;
       padding: 2px;
       transition: transform 0.15s;
     }
-    .gear-btn:hover, .net-btn:hover { transform: scale(1.15); }
 
     #pongCanvas {
-      width: 430px;
-      height: 540px;
+      width: 100%;
+      aspect-ratio: 430 / 540;
+      max-height: 62dvh;
       background-color: var(--theme-light);
-      border: 3px solid var(--theme-main);
-      border-radius: 24px;
+      border: 2.5px solid var(--theme-main);
+      border-radius: 18px;
       cursor: none;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      touch-action: none;
     }
 
     .item-guide-box {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 6px 12px;
+      gap: 4px 8px;
       width: 100%;
       background: #ffffff;
       border: 1.5px solid var(--theme-border);
-      border-radius: 14px;
-      padding: 7px 12px;
-      font-size: 11.5px;
+      border-radius: 12px;
+      padding: 6px 10px;
+      font-size: 11px;
       color: #475569;
     }
 
     .item-guide-box span {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       white-space: nowrap;
     }
 
     .item-guide-icon {
-      width: 17px;
-      height: 17px;
+      width: 16px;
+      height: 16px;
       object-fit: contain;
       image-rendering: pixelated;
       image-rendering: crisp-edges;
@@ -162,10 +181,10 @@
       align-items: center;
       width: 100%;
       background: var(--theme-light);
-      border: 2px solid var(--theme-border);
-      border-radius: 16px;
-      padding: 6px 12px;
-      font-size: 13px;
+      border: 1.5px solid var(--theme-border);
+      border-radius: 14px;
+      padding: 5px 10px;
+      font-size: 12px;
       transition: opacity 0.2s, background-color 0.2s;
     }
 
@@ -178,74 +197,66 @@
     .select-group {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
     }
 
     .char-avatar-mini {
-      width: 28px;
-      height: 28px;
+      width: 25px;
+      height: 25px;
       border-radius: 50%;
-      border: 2px solid var(--theme-border);
+      border: 1.5px solid var(--theme-border);
       background: #ffffff;
       object-fit: cover;
       image-rendering: pixelated;
       image-rendering: crisp-edges;
       flex-shrink: 0;
-      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    .char-avatar-mini.pop {
-      transform: scale(1.22);
     }
 
     select {
       font-family: inherit;
-      padding: 4px 8px;
+      padding: 3px 6px;
       border-radius: 8px;
       border: 1.5px solid var(--theme-border);
       background: #ffffff;
       color: var(--theme-dark);
-      font-size: 13px;
+      font-size: 12px;
       cursor: pointer;
     }
 
-    select:disabled {
-      cursor: not-allowed;
-      color: #64748b;
-      border-color: #cbd5e1;
-    }
-
     .bottom-guide {
-      font-size: 11.5px;
+      font-size: 10.5px;
       color: #64748b;
       text-align: center;
+      line-height: 1.25;
     }
 
     .modal-overlay {
       display: none;
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
+      background: rgba(0, 0, 0, 0.55);
       align-items: center;
       justify-content: center;
       z-index: 100;
+      padding: 16px;
     }
 
     .modal-box {
-      width: 380px;
+      width: 100%;
+      max-width: 360px;
       background: #ffffff;
-      border: 4px solid var(--theme-main);
-      border-radius: 28px;
-      padding: 24px;
+      border: 3.5px solid var(--theme-main);
+      border-radius: 24px;
+      padding: 18px;
       display: flex;
       flex-direction: column;
-      gap: 15px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      gap: 12px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
       font-family: var(--app-font);
-      font-weight: normal;
     }
 
     .modal-title {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: normal;
       color: var(--theme-dark);
       display: flex;
@@ -253,24 +264,21 @@
       align-items: center;
     }
 
-    .modal-group { display: flex; flex-direction: column; gap: 8px; }
-    .modal-label { font-size: 13px; color: #64748b; display: flex; justify-content: space-between; }
-    .modal-row { display: flex; gap: 8px; }
+    .modal-group { display: flex; flex-direction: column; gap: 6px; }
+    .modal-label { font-size: 12px; color: #64748b; display: flex; justify-content: space-between; }
+    .modal-row { display: flex; gap: 6px; }
 
     .modal-btn {
       flex: 1;
-      padding: 10px 0;
-      border-radius: 14px;
-      border: 2px solid #cbd5e1;
+      padding: 8px 0;
+      border-radius: 12px;
+      border: 1.5px solid #cbd5e1;
       background: #ffffff;
       font-family: inherit;
-      font-size: 14px;
-      font-weight: normal;
+      font-size: 13px;
       cursor: pointer;
       color: #334155;
-      transition: transform 0.1s, background-color 0.15s;
     }
-    .modal-btn:hover { transform: scale(1.02); }
 
     .modal-btn.active {
       background: var(--theme-main);
@@ -282,7 +290,7 @@
       background: #e11d48 !important;
       color: #ffffff !important;
       border-color: #9f1239 !important;
-      font-size: 15px !important;
+      font-size: 14px !important;
     }
 
     .btn-cancel {
@@ -294,43 +302,36 @@
     .char-picker-grid {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
-      gap: 6px;
-      margin-top: 4px;
+      gap: 4px;
     }
 
     .char-pick-card {
-      border: 2px solid #e2e8f0;
-      border-radius: 14px;
-      padding: 6px 2px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 5px 2px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
+      gap: 3px;
       cursor: pointer;
       background: #f8fafc;
-      transition: all 0.15s ease;
     }
 
     .char-pick-card.active {
       border-color: var(--theme-main);
       background: var(--theme-light);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 10px rgba(104, 184, 51, 0.25);
     }
 
     .char-pick-card img {
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
       object-fit: cover;
       image-rendering: pixelated;
       image-rendering: crisp-edges;
     }
 
-    .char-pick-card span {
-      font-size: 11px;
-      color: #334155;
-    }
+    .char-pick-card span { font-size: 10.5px; }
 
     .volume-slider {
       width: 100%;
@@ -340,15 +341,14 @@
       outline: none;
       -webkit-appearance: none;
       accent-color: var(--theme-main);
-      cursor: pointer;
     }
 
     .net-input {
-      padding: 8px 12px;
-      border: 2px solid var(--theme-border);
+      padding: 7px 10px;
+      border: 1.5px solid var(--theme-border);
       border-radius: 10px;
       font-family: inherit;
-      font-size: 14px;
+      font-size: 13px;
       text-align: center;
       outline: none;
       color: var(--theme-dark);
@@ -357,61 +357,63 @@
 </head>
 <body>
 
-  <div class="game-frame" id="gameFrame">
-    <div class="top-bar">
-      <h1 id="titleTxt">사도 핑퐁 (10세트)</h1>
-      <div class="top-right">
-        <div class="score-board">
-          <span><span id="lblOpponent">AI</span> <b id="aiScoreTxt" style="font-weight:normal;">0</b></span>
-          <span style="opacity:0.4;">:</span>
-          <span><b id="pScoreTxt" style="font-weight:normal;">0</b> <span id="lblScorePlayer">교주</span></span>
+  <div class="game-scaler">
+    <div class="game-frame" id="gameFrame">
+      <div class="top-bar">
+        <h1 id="titleTxt">사도 핑퐁 (10세트)</h1>
+        <div class="top-right">
+          <div class="score-board">
+            <span><span id="lblOpponent">AI</span> <b id="aiScoreTxt">0</b></span>
+            <span style="opacity:0.4;">:</span>
+            <span><b id="pScoreTxt">0</b> <span id="lblScorePlayer">교주</span></span>
+          </div>
+          <button class="net-btn" onclick="openMultiModal()" title="Multiplayer">🌐</button>
+          <button class="gear-btn" onclick="openSettings()" title="Settings">⚙️</button>
         </div>
-        <button class="net-btn" onclick="openMultiModal()" title="Multiplayer">🌐</button>
-        <button class="gear-btn" onclick="openSettings()" title="Settings">⚙️️</button>
-      </div>
-    </div>
-
-    <canvas id="pongCanvas"></canvas>
-
-    <div class="item-guide-box">
-      <span><img src="item_yellow.png" class="item-guide-icon" alt="pink"><span id="guideYellow">분홍캔: 가드 확대</span></span>
-      <span><img src="item_green.png" class="item-guide-icon" alt="blue"><span id="guideGreen">하늘캔: 가드 축소</span></span>
-      <span><img src="item_purple.png" class="item-guide-icon" alt="star"><span id="guidePurple">별사탕: 공 복제</span></span>
-      <span><img src="item_macaron.png" class="item-guide-icon" alt="macaron"><span id="guideMacaron">모카롱: 슬라임 범퍼</span></span>
-    </div>
-
-    <div class="char-select-row" id="charSelectRow">
-      <div class="select-group">
-        <span id="lblPlayer">MY:</span>
-        <img id="myAvatarMini" class="char-avatar-mini" src="butter.png" alt="My">
-        <select id="playerCharSelect" onchange="changePlayerChar(this.value)">
-          <option value="butter">버터</option>
-          <option value="rim">림</option>
-          <option value="ner">네르</option>
-          <option value="aya">아야</option>
-          <option value="daya">다야</option>
-        </select>
       </div>
 
-      <div class="select-group">
-        <span id="lblAi">OPPONENT:</span>
-        <img id="aiAvatarMini" class="char-avatar-mini" src="dwqdqdsswdasdas.png" alt="Ai">
-        <select id="aiCharSelect" onchange="changeAiChar(this.value)">
-          <option value="rim">림</option>
-          <option value="butter">버터</option>
-          <option value="ner">네르</option>
-          <option value="aya">아야</option>
-          <option value="daya">다야</option>
-        </select>
-      </div>
-    </div>
+      <canvas id="pongCanvas"></canvas>
 
-    <div class="bottom-guide" id="bottomControlGuide">
-      게임 시작 전 사도를 선택하세요! 경기 중에는 변경할 수 없습니다 (10세트 선취전).
+      <div class="item-guide-box">
+        <span><img src="item_yellow.png" class="item-guide-icon" alt="pink"><span id="guideYellow">분홍캔: 가드 확대</span></span>
+        <span><img src="item_green.png" class="item-guide-icon" alt="blue"><span id="guideGreen">하늘캔: 가드 축소</span></span>
+        <span><img src="item_purple.png" class="item-guide-icon" alt="star"><span id="guidePurple">별사탕: 공 복제</span></span>
+        <span><img src="item_macaron.png" class="item-guide-icon" alt="macaron"><span id="guideMacaron">모카롱: 슬라임 범퍼</span></span>
+      </div>
+
+      <div class="char-select-row" id="charSelectRow">
+        <div class="select-group">
+          <span id="lblPlayer">MY:</span>
+          <img id="myAvatarMini" class="char-avatar-mini" src="butter.png" alt="My">
+          <select id="playerCharSelect" onchange="changePlayerChar(this.value)">
+            <option value="butter">버터</option>
+            <option value="rim">림</option>
+            <option value="ner">네르</option>
+            <option value="aya">아야</option>
+            <option value="daya">다야</option>
+          </select>
+        </div>
+
+        <div class="select-group">
+          <span id="lblAi">OPPONENT:</span>
+          <img id="aiAvatarMini" class="char-avatar-mini" src="dwqdqdsswdasdas.png" alt="Ai">
+          <select id="aiCharSelect" onchange="changeAiChar(this.value)">
+            <option value="rim">림</option>
+            <option value="butter">버터</option>
+            <option value="ner">네르</option>
+            <option value="aya">아야</option>
+            <option value="daya">다야</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="bottom-guide" id="bottomControlGuide">
+        게임 시작 전 사도를 선택하세요! 경기 중에는 변경할 수 없습니다 (10세트 선취전).
+      </div>
     </div>
   </div>
 
-  <!-- [초기 진입 모달] 최초 실행 시 언어 및 사도 선택 -->
+  <!-- [초기 진입 모달] -->
   <div class="modal-overlay" id="initModal">
     <div class="modal-box">
       <div class="modal-title">
@@ -453,7 +455,7 @@
         </div>
       </div>
 
-      <button class="modal-btn active" id="btnConfirmStart" onclick="confirmInitialSetup()" style="margin-top: 6px; padding: 12px 0; font-size: 15px;">
+      <button class="modal-btn active" id="btnConfirmStart" onclick="confirmInitialSetup()" style="margin-top: 4px; padding: 10px 0; font-size: 14px;">
         게임 시작하기 🚀
       </button>
     </div>
@@ -464,7 +466,7 @@
     <div class="modal-box">
       <div class="modal-title">
         <span id="modalHeader">환경 설정</span>
-        <button style="border:none;background:none;font-size:22px;cursor:pointer;" onclick="closeSettings()">✕</button>
+        <button style="border:none;background:none;font-size:20px;cursor:pointer;" onclick="closeSettings()">✕</button>
       </div>
 
       <div class="modal-group">
@@ -528,50 +530,50 @@
     <div class="modal-box">
       <div class="modal-title">
         <span id="multiModalTitle">🌐 1:1 P2P 멀티플레이</span>
-        <button style="border:none;background:none;font-size:22px;cursor:pointer;" onclick="closeMultiModal()">✕</button>
+        <button style="border:none;background:none;font-size:20px;cursor:pointer;" onclick="closeMultiModal()">✕</button>
       </div>
 
       <div class="modal-group">
-        <div id="multiDescTxt" style="font-size: 13px; color: #4b5563; line-height: 1.5;">
+        <div id="multiDescTxt" style="font-size: 12px; color: #4b5563; line-height: 1.4;">
           별도 서버 설치 없이 브라우저 간 직접 연결(P2P)됩니다.
         </div>
       </div>
 
-      <div class="modal-group" style="background: var(--theme-light); padding: 12px; border-radius: 14px; border: 1.5px solid var(--theme-border);">
-        <div id="multiHostTitle" style="font-size: 13px; font-weight: bold; color: var(--theme-dark);">1. 방 만들기 (호스트)</div>
-        <button class="modal-btn active" onclick="createRoom()" id="btnCreateRoom" style="margin-top: 6px;">방 생성하기</button>
-        <div id="roomCodeDisplay" style="display:none; margin-top: 8px; font-size: 13px; color: #1e293b; text-align: center;">
-          <span id="lblMyRoomCode">내 방 코드:</span> <b id="myRoomId" style="color:var(--theme-dark); font-size: 16px; user-select: all;"></b>
-          <div id="lblTellFriend" style="font-size:11px; color:#64748b; margin-top:2px;">상대방에게 이 코드를 알려주세요!</div>
+      <div class="modal-group" style="background: var(--theme-light); padding: 10px; border-radius: 14px; border: 1.5px solid var(--theme-border);">
+        <div id="multiHostTitle" style="font-size: 12.5px; font-weight: bold; color: var(--theme-dark);">1. 방 만들기 (호스트)</div>
+        <button class="modal-btn active" onclick="createRoom()" id="btnCreateRoom" style="margin-top: 5px;">방 생성하기</button>
+        <div id="roomCodeDisplay" style="display:none; margin-top: 6px; font-size: 12.5px; color: #1e293b; text-align: center;">
+          <span id="lblMyRoomCode">내 방 코드:</span> <b id="myRoomId" style="color:var(--theme-dark); font-size: 15px; user-select: all;"></b>
+          <div id="lblTellFriend" style="font-size:10.5px; color:#64748b; margin-top:2px;">상대방에게 이 코드를 알려주세요!</div>
         </div>
       </div>
 
-      <div class="modal-group" style="background: #f8fafc; padding: 12px; border-radius: 14px; border: 1.5px solid #cbd5e1;">
-        <div id="multiGuestTitle" style="font-size: 13px; font-weight: bold; color: #334155;">2. 방 참가하기 (게스트)</div>
-        <div class="modal-row" style="margin-top: 6px;">
+      <div class="modal-group" style="background: #f8fafc; padding: 10px; border-radius: 14px; border: 1.5px solid #cbd5e1;">
+        <div id="multiGuestTitle" style="font-size: 12.5px; font-weight: bold; color: #334155;">2. 방 참가하기 (게스트)</div>
+        <div class="modal-row" style="margin-top: 5px;">
           <input type="text" id="joinRoomInput" class="net-input" placeholder="방 코드 입력" style="flex: 2; text-transform: uppercase;">
           <button class="modal-btn" id="btnJoinRoom" onclick="joinRoom()" style="flex: 1; background: #3b82f6; color: #ffffff; border-color: #2563eb;">참가</button>
         </div>
       </div>
 
-      <button class="modal-btn" id="btnBackToAi" onclick="disconnectMulti(true)" style="color: #64748b; margin-top: 4px;">
+      <button class="modal-btn" id="btnBackToAi" onclick="disconnectMulti(true)" style="color: #64748b; margin-top: 2px;">
         🤖 1인용 AI 모드로 돌아가기
       </button>
-      <div id="multiStatusTxt" style="font-size: 12px; text-align: center; color: #0284c7; min-height: 16px;"></div>
+      <div id="multiStatusTxt" style="font-size: 11.5px; text-align: center; color: #0284c7; min-height: 15px;"></div>
     </div>
   </div>
 
-  <!-- 리벤지 / 취소 게임오버 모달 -->
+  <!-- 리벤지 / 취소 모달 -->
   <div class="modal-overlay" id="revengeModal">
-    <div class="modal-box" style="text-align: center; gap: 18px;">
-      <div id="matchResultTitle" style="font-size: 24px; font-weight: bold; margin-top: 6px;">GAME OVER</div>
-      <div id="matchResultSub" style="font-size: 14px; color: #64748b;">다시 한 판 승부를 겨루시겠습니까?</div>
+    <div class="modal-box" style="text-align: center; gap: 14px;">
+      <div id="matchResultTitle" style="font-size: 22px; font-weight: bold; margin-top: 4px;">GAME OVER</div>
+      <div id="matchResultSub" style="font-size: 13px; color: #64748b;">다시 한 판 승부를 겨루시겠습니까?</div>
       
       <div class="modal-row">
         <button class="modal-btn btn-revenge" id="btnRevengeAction" onclick="onRevengeClicked()">⚔️ 리벤지 (다시 하기)</button>
         <button class="modal-btn btn-cancel" id="btnCancelAction" onclick="onCancelMatchClicked()">🚪 나가기 (취소)</button>
       </div>
-      <div id="revengeStatusTxt" style="font-size: 12px; color: #e11d48; min-height: 16px;"></div>
+      <div id="revengeStatusTxt" style="font-size: 11.5px; color: #e11d48; min-height: 15px;"></div>
     </div>
   </div>
 
@@ -588,11 +590,10 @@
       dpr = Math.max(Math.ceil(window.devicePixelRatio || 1), 2);
       canvas.width = viewW * dpr;
       canvas.height = viewH * dpr;
-      canvas.style.width = viewW + 'px';
-      canvas.style.height = viewH + 'px';
     }
     setupCanvasDPI();
     window.addEventListener('resize', setupCanvasDPI);
+    window.addEventListener('orientationchange', () => setTimeout(setupCanvasDPI, 200));
 
     let myNickname = localStorage.getItem('pong_nickname') || '교주';
     let opponentNickname = 'AI';
@@ -851,7 +852,6 @@
     }
     applyTheme(curPlayerChar);
 
-    // [전용 프로필 얼굴 에셋 및 인게임 에셋 등록]
     const ASSETS = {
       butter: { src: 'player.png', img: null, upscaled: null },
       rim:    { src: 'player_rim.png', img: null, upscaled: null },
@@ -859,7 +859,6 @@
       aya:    { src: 'player_aya.png', img: null, upscaled: null },
       daya:   { src: 'player_daya.png', img: null, upscaled: null },
 
-      // 사도별 전용 프로필 얼굴 에셋
       face_butter: { src: 'butter.png', img: null, upscaled: null, dataUrl: null },
       face_rim:    { src: 'dwqdqdsswdasdas.png', img: null, upscaled: null, dataUrl: null },
       face_ner:    { src: 'NERU.png', img: null, upscaled: null, dataUrl: null },
@@ -875,7 +874,6 @@
       item_macaron: { src: 'item_macaron.png', img: null, upscaled: null }
     };
 
-    // [무손실 정수배 업스케일러 캐시 엔진]
     function createUpscaledCanvas(img, scale = 4) {
       const oc = document.createElement('canvas');
       oc.width = img.naturalWidth * scale;
@@ -886,7 +884,6 @@
       return oc;
     }
 
-    // 에셋 로딩 및 4배 업스케일러 자동 적용
     Object.keys(ASSETS).forEach(k => {
       const asset = ASSETS[k];
       const img = new Image();
@@ -896,16 +893,13 @@
         const upCanvas = createUpscaledCanvas(img, 4);
         asset.upscaled = upCanvas;
         
-        // 얼굴 프로필 에셋인 경우 dataUrl을 추출해 UI 엘리먼트 고화질 교체
         if (k.startsWith('face_')) {
           const charKey = k.replace('face_', '');
           asset.dataUrl = upCanvas.toDataURL('image/png');
           
-          // 모달 내 픽커 이미지 갱신
           const modalImg = document.getElementById(`modalPickImg_${charKey}`);
           if (modalImg) modalImg.src = asset.dataUrl;
 
-          // 현재 선택된 사도 아바타 갱신
           updateCharMiniAvatars();
         }
       };
@@ -928,13 +922,9 @@
 
       if (pImg) {
         pImg.src = (pFaceAsset && pFaceAsset.dataUrl) ? pFaceAsset.dataUrl : (CHAR_FACES[curPlayerChar] || 'butter.png');
-        pImg.classList.add('pop');
-        setTimeout(() => pImg.classList.remove('pop'), 200);
       }
       if (aImg) {
         aImg.src = (aFaceAsset && aFaceAsset.dataUrl) ? aFaceAsset.dataUrl : (CHAR_FACES[curAiChar] || 'dwqdqdsswdasdas.png');
-        aImg.classList.add('pop');
-        setTimeout(() => aImg.classList.remove('pop'), 200);
       }
     }
 
@@ -978,9 +968,6 @@
       }
     }
 
-    // =============================================================
-    // [리벤지 / 취소 팝업 시스템]
-    // =============================================================
     let revengeRequestedByMe = false;
 
     function showRevengeModal(isWinner) {
@@ -1027,9 +1014,6 @@
       }
     }
 
-    // =============================================================
-    // [양측 배너 충돌 + 5초 대기 인트로 연출 모듈]
-    // =============================================================
     let matchIntroTimer = 0;
     const MATCH_INTRO_DURATION = 330;
     const SLIDE_DURATION = 30;
@@ -1061,7 +1045,6 @@
         ? 1 + c3 * Math.pow(slideProg - 1, 3) + c1 * Math.pow(slideProg - 1, 2)
         : 1.0;
 
-      // 충돌 순간 맑은 라운드 벨 사운드 재생
       if (slideProg >= 1.0 && !hasClashed) {
         hasClashed = true;
         triggerScreenShake(35);
@@ -1090,7 +1073,6 @@
       const centerY = viewH / 2 - 10;
       const cardH = 210;
 
-      // 1P 카드 (좌측 배너)
       const card1X = 15 + leftOffset;
       ctx.save();
       ctx.fillStyle = '#bbf7d0';
@@ -1106,7 +1088,6 @@
       ctx.fillText('1P PLAYER', card1X + 12, centerY - cardH / 2 + 21);
       ctx.restore();
 
-      // 2P 카드 (우측 배너)
       const card2X = viewW / 2 + 5 + rightOffset;
       ctx.save();
       ctx.fillStyle = '#fed7aa';
@@ -1122,7 +1103,6 @@
       ctx.fillText((netMode !== 'OFFLINE' ? '2P PLAYER' : 'AI BOT'), card2X + 12, centerY - cardH / 2 + 21);
       ctx.restore();
 
-      // [레이어 1단계]: 사도 전신 이미지 먼저 렌더링
       const introHop1 = Math.abs(Math.sin((MATCH_INTRO_DURATION - matchIntroTimer) * 0.18)) * 14;
       const introHop2 = Math.abs(Math.sin((MATCH_INTRO_DURATION - matchIntroTimer) * 0.18 + Math.PI / 2)) * 14;
 
@@ -1150,11 +1130,9 @@
         ctx.restore();
       }
 
-      // [레이어 2단계 - 맨앞 레이어]: 닉네임 배너 박스 (업스케일된 고화질 도트 얼굴 렌더링)
       const leftName = (netMode === 'CLIENT') ? opponentNickname : myNickname;
       const rightName = (netMode === 'CLIENT') ? myNickname : opponentNickname;
 
-      // 1P 닉네임 배너
       ctx.save();
       ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
       ctx.beginPath();
@@ -1164,7 +1142,6 @@
       ctx.lineWidth = 2.5;
       ctx.stroke();
 
-      // 원형 프로필 액자 내부에 무손실 업스케일링 얼굴 배치
       ctx.save();
       ctx.beginPath();
       ctx.arc(46 + leftOffset, centerY + 60, 16, 0, Math.PI * 2);
@@ -1175,7 +1152,7 @@
       const leftFaceAsset = ASSETS['face_' + leftCharKey];
       const leftFaceSource = leftFaceAsset ? (leftFaceAsset.upscaled || leftFaceAsset.img) : null;
       if (leftFaceSource) {
-        ctx.imageSmoothingEnabled = false; // 도트 번짐 방지
+        ctx.imageSmoothingEnabled = false;
         ctx.drawImage(leftFaceSource, 46 + leftOffset - 17, centerY + 60 - 17, 34, 34);
       }
       ctx.restore();
@@ -1191,7 +1168,6 @@
       ctx.textAlign = 'left';
       ctx.fillText(leftName, 70 + leftOffset, centerY + 65);
 
-      // 시작 플레이어 뱃지
       ctx.fillStyle = '#ef4444';
       ctx.beginPath();
       ctx.roundRect(28 + leftOffset, centerY + 87, 76, 18, 8);
@@ -1202,7 +1178,6 @@
       ctx.fillText(I18N[curLang].startPlayerBadge, 66 + leftOffset, centerY + 100);
       ctx.restore();
 
-      // 2P 닉네임 배너
       ctx.save();
       ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
       ctx.beginPath();
@@ -1212,7 +1187,6 @@
       ctx.lineWidth = 2.5;
       ctx.stroke();
 
-      // 2P 원형 프로필 액자 내부에 무손실 업스케일링 얼굴 배치
       ctx.save();
       ctx.beginPath();
       ctx.arc(viewW / 2 + 36 + rightOffset, centerY + 60, 16, 0, Math.PI * 2);
@@ -1223,7 +1197,7 @@
       const rightFaceAsset = ASSETS['face_' + rightCharKey];
       const rightFaceSource = rightFaceAsset ? (rightFaceAsset.upscaled || rightFaceAsset.img) : null;
       if (rightFaceSource) {
-        ctx.imageSmoothingEnabled = false; // 도트 번짐 방지
+        ctx.imageSmoothingEnabled = false;
         ctx.drawImage(rightFaceSource, viewW / 2 + 36 + rightOffset - 17, centerY + 60 - 17, 34, 34);
       }
       ctx.restore();
@@ -1241,7 +1215,6 @@
       ctx.fillText(dispOppName, viewW / 2 + 58 + rightOffset, centerY + 65);
       ctx.restore();
 
-      // VS 폭발 마크 & 5초 타이머
       if (hasClashed) {
         ctx.save();
         ctx.translate(viewW / 2, centerY - 28);
@@ -1288,9 +1261,6 @@
       }
     }
 
-    // =============================================================
-    // P2P 멀티플레이 통신 엔진
-    // =============================================================
     let peer = null;
     let conn = null;
     let netMode = 'OFFLINE';
@@ -1505,9 +1475,6 @@
       if (pkt.shake) triggerScreenShake(pkt.shake);
     }
 
-    // =============================================================
-    // BGM & SFX 엔진
-    // =============================================================
     let sfxVolume = 0.7;
     let bgmVolume = 0.5;
     let bgmLoopMode = false;
@@ -1855,6 +1822,7 @@
         const bAsset = ASSETS.ballItem;
         const source = bAsset.upscaled || bAsset.img;
         if (source) {
+          ctx.imageSmoothingEnabled = false;
           ctx.drawImage(source, -this.r, -this.r, this.r * 2, this.r * 2);
         } else {
           ctx.fillStyle = '#ef4444';
@@ -1896,6 +1864,7 @@
         const sAsset = ASSETS.slime;
         const source = sAsset.upscaled || sAsset.img;
         if (source) {
+          ctx.imageSmoothingEnabled = false;
           ctx.drawImage(source, -w / 2, -h / 2, w, h);
         } else {
           ctx.fillStyle = '#22c55e';
@@ -1931,6 +1900,7 @@
         const dAsset = ASSETS.drone;
         const source = dAsset.upscaled || dAsset.img;
         if (source) {
+          ctx.imageSmoothingEnabled = false;
           ctx.drawImage(source, -this.w / 2, -this.h / 2, this.w, this.h);
         }
         ctx.restore();
@@ -1956,6 +1926,7 @@
         const asset = ASSETS['item_' + this.type];
         const source = asset.upscaled || asset.img;
         if (source) {
+          ctx.imageSmoothingEnabled = false;
           ctx.drawImage(source, -this.w / 2, -this.h / 2, this.w, this.h);
         }
         ctx.restore();
@@ -2005,9 +1976,11 @@
       if (ai.x + ai.w > viewW - 15) ai.x = viewW - 15 - ai.w;
     }
 
-    canvas.addEventListener('pointermove', (e) => {
+    // 모바일 터치 및 마우스 입력 정규화 (화면 잘림 & 스케일 비율 대응)
+    function handlePointerCoord(clientX) {
       const rect = canvas.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
+      const scaleX = viewW / rect.width;
+      const mouseX = (clientX - rect.left) * scaleX;
       
       player.x = mouseX - player.w / 2;
       if (player.x < 15) player.x = 15;
@@ -2016,7 +1989,26 @@
       if (netMode === 'CLIENT' && conn && conn.open) {
         conn.send({ type: 'INPUT', mouseX: viewW - mouseX });
       }
+    }
+
+    canvas.addEventListener('pointermove', (e) => {
+      handlePointerCoord(e.clientX);
     });
+
+    // 터치 랙 방지 및 즉각 반응 리스너
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (e.touches && e.touches.length > 0) {
+        handlePointerCoord(e.touches[0].clientX);
+      }
+    }, { passive: false });
+
+    canvas.addEventListener('touchstart', (e) => {
+      ensureAudioUnlocked();
+      if (e.touches && e.touches.length > 0) {
+        handlePointerCoord(e.touches[0].clientX);
+      }
+    }, { passive: false });
 
     canvas.addEventListener('pointerdown', () => {
       ensureAudioUnlocked();
@@ -2160,9 +2152,6 @@
       });
     }
 
-    // =============================================================
-    // 메인 루프 (자동 서브 & 인트로 연출 지원)
-    // =============================================================
     let lastTime = performance.now();
 
     function loop(currentTime) {
@@ -2184,8 +2173,7 @@
 
       ctx.save();
       ctx.scale(dpr, dpr);
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
+      ctx.imageSmoothingEnabled = false;
 
       if (gameState === 'MATCH_INTRO') {
         drawMatchIntro(dt);
@@ -2194,7 +2182,6 @@
         return;
       }
 
-      // 3초 자동 서브
       if (gameState === 'SERVE' || gameState === 'ROUND_OVER') {
         if (netMode !== 'CLIENT') {
           autoServeTimer -= dt;
